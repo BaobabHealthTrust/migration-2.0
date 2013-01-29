@@ -7,6 +7,25 @@ RAILS_GEM_VERSION = '2.3.5' unless defined? RAILS_GEM_VERSION
 require File.join(File.dirname(__FILE__), 'boot')
 
 Rails::Initializer.run do |config|
+
+  bart1_data = YAML.load(File.open(File.join(RAILS_ROOT, "config/database.yml"), "r"))['bart']
+  Concept.establish_connection(bart1_data)
+  Encounter.establish_connection(bart1_data)
+  EncounterType.establish_connection(bart1_data)
+  Drug.establish_connection(bart1_data)
+  DrugOrder.establish_connection(bart1_data)
+  Observation.establish_connection(bart1_data)
+  Order.establish_connection(bart1_data)
+  Patient.establish_connection(bart1_data)
+  PatientIdentifier.establish_connection(bart1_data)
+  PatientIdentifierType.establish_connection(bart1_data)
+  PatientName.establish_connection(bart1_data)
+  Person.establish_connection(bart1_data)
+  Relationship.establish_connection(bart1_data)
+  RelationshipType.establish_connection(bart1_data)
+  User.establish_connection(bart1_data) 
+
+
   # Settings in config/environments/* take precedence over those specified here.
   # Application configuration should go into files in config/initializers
   # -- all .rb files in that directory are automatically loaded.
