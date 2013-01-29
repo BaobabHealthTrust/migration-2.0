@@ -1,6 +1,8 @@
 	Yes = Concept.find_by_name("Yes")
 	No = Concept.find_by_name("No")
 	Agrees = Concept.find_by_name("Agrees to followup")
+	Weight = Concept.find_by_name("Weight")
+	Height = Concept.find_by_name("Height")
 	
 	
 	
@@ -81,27 +83,26 @@ def self.create_record(visit_encounter_id, encounter)
         end
         enc.save
       end
-      
     when 'HEIGHT/WEIGHT'
-      
-		    enc = VitalsEncounter.new()
-		    enc.patient_id = encounter.patient_id
-		    enc.visit_encounter_id = visit_encounter_id
-		    enc.date_created = encounter.date_created
-		    enc.creator = encounter.creator
-		    (encounter.observations || []).each do |ob|
-		      case ob.concept.name.upcase
-		        when 'HEIGHT'
-		        	enc.height = ob.value_numeric
-		        when 'WEIGHT' 
-		        	enc.weight = ob.value_numeric
-		      end
-		    end
+      enc = VitalsEncounter.new()
+      enc.patient_id = encounter.patient_id
+      enc.visit_encounter_id = visit_encounter_id
+      enc.date_created = encounter.date_created
+      enc.creator = encounter.creator
+      (encounter.observations || []).each do |ob|
+        case ob.concept.name.upcase
+          when 'HEIGHT'
+            enc.height = ob.value_numeric
+          when 'WEIGHT' 
+            enc.weight = ob.value_numeric
+        end
+      end
 
-	      current_height = Observation.find(:last, :conditions => ["concept_id = ? and patient_id = ?",Concept.find_by_name("Height").concept_id,encounter.patient_id]) rescue nil
-	      enc.bmi = (enc.weight/(current_height*current_height)*10000) rescue nil
-	      enc.save      
-
+      current_height = Observation.find(:last, 
+        :conditions => ["concept_id = ? and patient_id = ?", 
+        Height.id,encounter.patient_id]) rescue nil
+      enc.bmi = (enc.weight/(current_height*current_height)*10000) rescue nil
+      enc.save      
 #		when 'HIV RECPTION'
 	#	    enc = VitalsEncounter.new()
 		#    enc.patient_id = encounter.patient_id
@@ -115,134 +116,131 @@ def self.create_record(visit_encounter_id, encounter)
 				#  end
 			#	end
 		when 'HIV STAGING'
-      
-		    enc = VitalsEncounter.new()
-		    enc.patient_id = encounter.patient_id
-		    enc.visit_encounter_id = visit_encounter_id
-		    enc.date_created = encounter.date_created
-		    enc.creator = encounter.creator
-		    (encounter.observations || []).each do |ob|
-		      case ob.concept.name.upcase
-		        when 'PREGNANT'
-		        	enc.patient_pregnant = Concept.find(ob.value_coded).name
-		  			when 'BREASTFEEDING'
-		  				enc.patient_breast_feeding = pregnant.Concept(ob.value_coded).name
-		  			when 'CD4 COUNT AVAILABLE'
-		  				enc.cd4_count_available = Concept.find(ob.value_coded).name
-		  			when 'CD4 COUNT'
-		  				enc.cd4_count = ob.value_numeric
-							enc.cd4_count_modifier = ob.value_modifier
-						when 'CD4 TEST DATE'
-							enc.date_of_cd4_count = ob.value_datetime
-						when 'ASYMPTOMATIC'
-							enc.asymptomatic = Concept.find(ob.value_coded).name
-						when 'PERSISTENT GENERALISED LYMPHADENOPATHY'
-							enc.persistent_generalized_lymphadenopathy = Concept.find(ob.value_coded).name
-						when 'UNSPECIFIED STAGE 1 CONDITION'
-							enc.unspecified_stage_1_cond= Concept.find(ob.value_coded).name
-						when 'MOLLUSCUMM CONTAGIOSUM'
-							enc.molluscumm_contagiosum = Concept.find(ob.value_coded).name
-						when 'WART VIRUS INFECTION, EXTENSIVE' 
-							enc.wart_virus_infection_extensive = Concept.find(ob.value_coded).name
-						when 'ORAL ULCERATIONS, RECURRENT'
-							enc.oral_ulcerations_recurrent = Concept.find(ob.value_coded).name
-						when  'PAROTID ENLARGEMENT, PERSISTENT UNEXPLAINED'
-							enc.parotid_enlargement_persistent_unexplained
-						when 'LINEAL GINGIVAL ERYTHEMA'
-							enc.lineal_gingival_erythema = Concept.find(ob.value_coded).name
-						when 'HERPES ZOSTER'
-							enc.herpes_zoster = Concept.find(ob.value_coded).name
-						when 'RESPIRATORY TRACT INFECTIONS, RECURRENT(SINUSITIS, TONSILLITIS, OTITIS MEDIA, PHARYNGITIS)'
-							enc.respiratory_tract_infections_recurrent = Concept.find(ob.value_coded).name
-						when 'UNSPECIFIED STAGE 2 CONDITION'
-							enc.unspecified_stage2_condition = Concept.find(ob.value_coded).name
-						when 'ANGULAR CHEILITIS'
-							enc.angular_chelitis = Concept.find(ob.value_coded).name
-						when 'PAPULAR PRURITIC ERUPTIONS / FUNGAL NAIL INFECTIONS'
-							enc.papular_prurtic_eruptions = Concept.find(ob.value_coded).name
-						when 'HEPATOSPLENOMEGALY, PERSISTENT UNEXPLAINED'
-							enc.hepatosplenomegaly_unexplained = Concept.find(ob.value_coded).name
-						when'ORAL HAIRY LEUKOPLAKIA'
-							enc.oral_hairy_leukoplakia = Concept.find(ob.value_coded).name
-						when'SEVERE WEIGHT LOSS >10% AND/OR BMI <18.5KG/M(SQUARED), UNEXPLAINED'
-							enc.severe_weight_loss = Concept.find(ob.value_coded).name
-						when'FEVER, PERSISTENT UNEXPLAINED (INTERMITTENT OR CONSTANT, > 1 MONTH)'
-							enc.fever_persistent_unexplained = Concept.find(ob.value_coded).name
-						when'PULMONARY TUBERCULOSIS (CURRENT)'
-							enc.pulmonary_tuberculosis = Concept.find(ob.value_coded).name
-						when'PULMONARY TUBERCULOSIS WITHIN THE last 2 YEARS'
-							enc.pulmonary_tuberculosis_last_2_years = Concept.find(ob.value_coded).name
-						when'SEVERE BACTERIAL INFECTIONS (PNEUMONIA, EMPYEMA, PYOMYOSITIS, BONE/JOINT, MENINGITIS, BACTERAEMIA)'							
-							enc.severe_bacterial_infection = Concept.find(ob.value_coded).name
-						when'BACTERIAL PNEUMONIA, RECURRENT SEVERE'							
-							enc.bacterial_pnuemonia = Concept.find(ob.value_coded).name
-						when'SYMPTOMATIC LYMPHOID INTERSTITIAL PNEUMONITIS'
-							enc.symptomatic_lymphoid_interstitial_pnuemonitis = Concept.find(ob.value_coded).name
-						when'CHRONIC HIV-ASSOCIATED LUNG DISEASE INCLUDING BRONCHIECTASIS'
-							enc.chronic_hiv_assoc_lung_disease = Concept.find(ob.value_coded).name
-						when'UNSPECIFIED STAGE 3 CONDITION'
-							enc.unspecified_stage3_condition = Concept.find(ob.value_coded).name
-						when'ANAEMIA'
-							enc.aneamia = Concept.find(ob.value_coded).name
-						when'NEUTROPAENIA, UNEXPLAINED < 500 /MM(CUBED)'
-							enc.neutropaenia = Concept.find(ob.value_coded).name
-						when'THROMBOCYTOPAENIA, CHRONIC < 50,000 /MM(CUBED)'
-							enc.thrombocytopaenia_chronic = Concept.find(ob.value_coded).name
-						when'DIARRHOEA'
-							enc.diarhoea = Concept.find(ob.value_coded).name
-						when'ORAL CANDIDIASIS'
-							enc.oral_candidiasis = Concept.find(ob.value_coded).name
-						when'ACUTE NECROTIZING ULCERATIVE GINGIVITIS OR PERIODONTITIS'
-							enc.acute_necrotizing_ulcerative_gingivitis = Concept.find(ob.value_coded).name
-						when'LYMPH NODE TUBERCLOSIS'
-							enc.lymph_node_tuberculosis = Concept.find(ob.value_coded).name
-						when'TOXOPLASMOSIS OF THE BRAIN'
-							enc.toxoplasmosis_of_brain = Concept.find(ob.value_coded).name
-						when'CRYPTOCOCCAL MENINGITIS'
-							enc.cryptococcal_meningitis = Concept.find(ob.value_coded).name
-						when'PROGRESSIVE MULTIFOCAL LEUKOENCEPHALOPATHY'
-							enc.progressive_multifocal_leukoencephalopathy = Concept.find(ob.value_coded).name
-						when'DISSEMINATED MYCOSIS (COCCIDIOMYCOSIS OR HISTOPLASMOSIS)'
-							enc.disseminated_mycosis = Concept.find(ob.value_coded).name
-						when'CANDIDIASIS OF OESOPHAGUS'
-							enc.candidiasis_of_oesophagus = Concept.find(ob.value_coded).name
-						when'EXTRAPULMONARY TUBERCULOSIS'
-							enc.extrapulmonary_tuberculosis = Concept.find(ob.value_coded).name
-						when'CEREBRAL OR B-CELL NON-HODGKIN LYMPHOMA'
-							enc.cerebral_non_hodgkin_lymphoma = Concept.find(ob.value_coded).name
-						when"KAPOSI'S SARCOMA"
-							enc.kaposis = Concept.find(ob.value_coded).name
-						when'HIV ENCEPHALOPATHY'
-							enc.hiv_encephalopathy = Concept.find(ob.value_coded).name
-						when'UNSPECIFIED STAGE 4 CONDITION'
-							enc.unspecified_stage_4_condition = Concept.find(ob.value_coded).name
-						when'PNEUMOCYSTIS PNEUMONIA'
-							enc.pnuemocystis_pnuemonia = Concept.find(ob.value_coded).name
-						when'DISSEMINATED NON-TUBERCLOSIS MYCOBACTERIAL INFECTION'
-							enc.disseminated_non_tuberculosis_mycobactierial_infection = Concept.find(ob.value_coded).name
-						when''
-							enc.cryptosporidiosis = Concept.find(ob.value_coded).name
-						when'ISOSPORIASIS >1 MONTH'
-							enc.isosporiasis = Concept.find(ob.value_coded).name
-						when'SYMPTOMATIC HIV-ASSOCIATED NEPHROPATHY OR CARDIOMYOPATHY'
-							enc.symptomatic_hiv_asscoiated_nephropathy = Concept.find(ob.value_coded).name
-						when'CHRONIC HERPES SIMPLEX INFECTION(OROLABIAL, GENITAL / ANORECTAL >1 MONTH OR VISCERAL AT ANY SITE)'
-							enc.chronic_herpes_simplex_infection = Concept.find(ob.value_coded).name
-						when'CYTOMEGALOVIRUS INFECTION (RETINITIS OR INFECTION OF OTHER ORGANS)'
-							enc.cytomegalovirus_infection = Concept.find(ob.value_coded).name
-						when'TOXOPLASMOSIS OF THE BRAIN (FROM AGE 1 MONTH)'
-							enc.toxoplasomis_of_the_brain_1month = Concept.find(ob.value_coded).name
-						when''
-							enc.recto_vaginal_fitsula = Concept.find(ob.value_coded).name
-						when'REASON ANTIRETROVIRALS STARTED'
-							enc.reason_for_starting_art = Concept.find(ob.value_coded).name
-						when'WHO STAGE'
-							enc.who_stage = Concept.find(ob.value_coded).name
-
+      enc = VitalsEncounter.new()
+      enc.patient_id = encounter.patient_id
+      enc.visit_encounter_id = visit_encounter_id
+      enc.date_created = encounter.date_created
+      enc.creator = encounter.creator
+      (encounter.observations || []).each do |ob|
+        case ob.concept.name.upcase
+          when 'PREGNANT'
+            enc.patient_pregnant = Concept.find(ob.value_coded).name
+          when 'BREASTFEEDING'
+            enc.patient_breast_feeding = pregnant.Concept(ob.value_coded).name
+          when 'CD4 COUNT AVAILABLE'
+            enc.cd4_count_available = Concept.find(ob.value_coded).name
+          when 'CD4 COUNT'
+            enc.cd4_count = ob.value_numeric
+            enc.cd4_count_modifier = ob.value_modifier
+          when 'CD4 TEST DATE'
+            enc.date_of_cd4_count = ob.value_datetime
+          when 'ASYMPTOMATIC'
+            enc.asymptomatic = Concept.find(ob.value_coded).name
+          when 'PERSISTENT GENERALISED LYMPHADENOPATHY'
+            enc.persistent_generalized_lymphadenopathy = Concept.find(ob.value_coded).name
+          when 'UNSPECIFIED STAGE 1 CONDITION'
+            enc.unspecified_stage_1_cond= Concept.find(ob.value_coded).name
+          when 'MOLLUSCUMM CONTAGIOSUM'
+            enc.molluscumm_contagiosum = Concept.find(ob.value_coded).name
+          when 'WART VIRUS INFECTION, EXTENSIVE' 
+            enc.wart_virus_infection_extensive = Concept.find(ob.value_coded).name
+          when 'ORAL ULCERATIONS, RECURRENT'
+            enc.oral_ulcerations_recurrent = Concept.find(ob.value_coded).name
+          when  'PAROTID ENLARGEMENT, PERSISTENT UNEXPLAINED'
+            enc.parotid_enlargement_persistent_unexplained
+          when 'LINEAL GINGIVAL ERYTHEMA'
+            enc.lineal_gingival_erythema = Concept.find(ob.value_coded).name
+          when 'HERPES ZOSTER'
+            enc.herpes_zoster = Concept.find(ob.value_coded).name
+          when 'RESPIRATORY TRACT INFECTIONS, RECURRENT(SINUSITIS, TONSILLITIS, OTITIS MEDIA, PHARYNGITIS)'
+            enc.respiratory_tract_infections_recurrent = Concept.find(ob.value_coded).name
+          when 'UNSPECIFIED STAGE 2 CONDITION'
+            enc.unspecified_stage2_condition = Concept.find(ob.value_coded).name
+          when 'ANGULAR CHEILITIS'
+            enc.angular_chelitis = Concept.find(ob.value_coded).name
+          when 'PAPULAR PRURITIC ERUPTIONS / FUNGAL NAIL INFECTIONS'
+            enc.papular_prurtic_eruptions = Concept.find(ob.value_coded).name
+          when 'HEPATOSPLENOMEGALY, PERSISTENT UNEXPLAINED'
+            enc.hepatosplenomegaly_unexplained = Concept.find(ob.value_coded).name
+          when'ORAL HAIRY LEUKOPLAKIA'
+            enc.oral_hairy_leukoplakia = Concept.find(ob.value_coded).name
+          when'SEVERE WEIGHT LOSS >10% AND/OR BMI <18.5KG/M(SQUARED), UNEXPLAINED'
+            enc.severe_weight_loss = Concept.find(ob.value_coded).name
+          when'FEVER, PERSISTENT UNEXPLAINED (INTERMITTENT OR CONSTANT, > 1 MONTH)'
+            enc.fever_persistent_unexplained = Concept.find(ob.value_coded).name
+          when'PULMONARY TUBERCULOSIS (CURRENT)'
+            enc.pulmonary_tuberculosis = Concept.find(ob.value_coded).name
+          when'PULMONARY TUBERCULOSIS WITHIN THE last 2 YEARS'
+            enc.pulmonary_tuberculosis_last_2_years = Concept.find(ob.value_coded).name
+          when'SEVERE BACTERIAL INFECTIONS (PNEUMONIA, EMPYEMA, PYOMYOSITIS, BONE/JOINT, MENINGITIS, BACTERAEMIA)'							
+            enc.severe_bacterial_infection = Concept.find(ob.value_coded).name
+          when'BACTERIAL PNEUMONIA, RECURRENT SEVERE'							
+            enc.bacterial_pnuemonia = Concept.find(ob.value_coded).name
+          when'SYMPTOMATIC LYMPHOID INTERSTITIAL PNEUMONITIS'
+            enc.symptomatic_lymphoid_interstitial_pnuemonitis = Concept.find(ob.value_coded).name
+          when'CHRONIC HIV-ASSOCIATED LUNG DISEASE INCLUDING BRONCHIECTASIS'
+            enc.chronic_hiv_assoc_lung_disease = Concept.find(ob.value_coded).name
+          when'UNSPECIFIED STAGE 3 CONDITION'
+            enc.unspecified_stage3_condition = Concept.find(ob.value_coded).name
+          when'ANAEMIA'
+            enc.aneamia = Concept.find(ob.value_coded).name
+          when'NEUTROPAENIA, UNEXPLAINED < 500 /MM(CUBED)'
+            enc.neutropaenia = Concept.find(ob.value_coded).name
+          when'THROMBOCYTOPAENIA, CHRONIC < 50,000 /MM(CUBED)'
+            enc.thrombocytopaenia_chronic = Concept.find(ob.value_coded).name
+          when'DIARRHOEA'
+            enc.diarhoea = Concept.find(ob.value_coded).name
+          when'ORAL CANDIDIASIS'
+            enc.oral_candidiasis = Concept.find(ob.value_coded).name
+          when'ACUTE NECROTIZING ULCERATIVE GINGIVITIS OR PERIODONTITIS'
+            enc.acute_necrotizing_ulcerative_gingivitis = Concept.find(ob.value_coded).name
+          when'LYMPH NODE TUBERCLOSIS'
+            enc.lymph_node_tuberculosis = Concept.find(ob.value_coded).name
+          when'TOXOPLASMOSIS OF THE BRAIN'
+            enc.toxoplasmosis_of_brain = Concept.find(ob.value_coded).name
+          when'CRYPTOCOCCAL MENINGITIS'
+            enc.cryptococcal_meningitis = Concept.find(ob.value_coded).name
+          when'PROGRESSIVE MULTIFOCAL LEUKOENCEPHALOPATHY'
+            enc.progressive_multifocal_leukoencephalopathy = Concept.find(ob.value_coded).name
+          when'DISSEMINATED MYCOSIS (COCCIDIOMYCOSIS OR HISTOPLASMOSIS)'
+            enc.disseminated_mycosis = Concept.find(ob.value_coded).name
+          when'CANDIDIASIS OF OESOPHAGUS'
+            enc.candidiasis_of_oesophagus = Concept.find(ob.value_coded).name
+          when'EXTRAPULMONARY TUBERCULOSIS'
+            enc.extrapulmonary_tuberculosis = Concept.find(ob.value_coded).name
+          when'CEREBRAL OR B-CELL NON-HODGKIN LYMPHOMA'
+            enc.cerebral_non_hodgkin_lymphoma = Concept.find(ob.value_coded).name
+          when"KAPOSI'S SARCOMA"
+            enc.kaposis = Concept.find(ob.value_coded).name
+          when'HIV ENCEPHALOPATHY'
+            enc.hiv_encephalopathy = Concept.find(ob.value_coded).name
+          when'UNSPECIFIED STAGE 4 CONDITION'
+            enc.unspecified_stage_4_condition = Concept.find(ob.value_coded).name
+          when'PNEUMOCYSTIS PNEUMONIA'
+            enc.pnuemocystis_pnuemonia = Concept.find(ob.value_coded).name
+          when'DISSEMINATED NON-TUBERCLOSIS MYCOBACTERIAL INFECTION'
+            enc.disseminated_non_tuberculosis_mycobactierial_infection = Concept.find(ob.value_coded).name
+          when''
+            enc.cryptosporidiosis = Concept.find(ob.value_coded).name
+          when'ISOSPORIASIS >1 MONTH'
+            enc.isosporiasis = Concept.find(ob.value_coded).name
+          when'SYMPTOMATIC HIV-ASSOCIATED NEPHROPATHY OR CARDIOMYOPATHY'
+            enc.symptomatic_hiv_asscoiated_nephropathy = Concept.find(ob.value_coded).name
+          when'CHRONIC HERPES SIMPLEX INFECTION(OROLABIAL, GENITAL / ANORECTAL >1 MONTH OR VISCERAL AT ANY SITE)'
+            enc.chronic_herpes_simplex_infection = Concept.find(ob.value_coded).name
+          when'CYTOMEGALOVIRUS INFECTION (RETINITIS OR INFECTION OF OTHER ORGANS)'
+            enc.cytomegalovirus_infection = Concept.find(ob.value_coded).name
+          when'TOXOPLASMOSIS OF THE BRAIN (FROM AGE 1 MONTH)'
+            enc.toxoplasomis_of_the_brain_1month = Concept.find(ob.value_coded).name
+          when''
+            enc.recto_vaginal_fitsula = Concept.find(ob.value_coded).name
+          when'REASON ANTIRETROVIRALS STARTED'
+            enc.reason_for_starting_art = Concept.find(ob.value_coded).name
+          when'WHO STAGE'
+            enc.who_stage = Concept.find(ob.value_coded).name
 					end
 					enc.save
 				end  
-		
 		when 'PRE ART VISIT'
 			enc = PreArtVisitEncounter.new()
 	    enc.patient_id = encounter.patient_id
@@ -328,7 +326,6 @@ def self.create_record(visit_encounter_id, encounter)
 					if enc.skin_rash.to_upcase == 'YES DRUG INDUCED' 
 						enc.drug_induced_skin_rash = Concept(ob.value_coded).name
 					end
-								
 				when 'TB STATUS'
 					enc.tb_status = Concept(ob.value_coded).name
 				when 'REFER PATIENT TO CLINICIAN'
@@ -341,11 +338,9 @@ def self.create_record(visit_encounter_id, encounter)
 					enc.number_of_condoms_given = ob.value_numeric
 				when 'PRESCRIBED ISONIAZED (IPT)'
 					enc.prescribe_ipt = Concept(ob.value_coded).name
-
-					end
-					enc.save
+        end
+        enc.save
 			end 
-		
 		when 'ART VISIT'
       enc = ArtVisitEncounter.new()
 	    enc.patient_id = encounter.patient_id
@@ -477,9 +472,6 @@ def self.create_record(visit_encounter_id, encounter)
 						end
 					enc.save
 				end 
-
-
-		  
 		when 'UPDATE OUTCOME'  
       enc = OutcomeEncounter.new()
 	    enc.patient_id = encounter.patient_id
@@ -495,20 +487,43 @@ def self.create_record(visit_encounter_id, encounter)
 				
 		  
 		  end
-		  
-		  
     when 'GIVE DRUGS'  
       enc = GiveDrugsEncounter.new()
-		    enc.patient_id = encounter.patient_id
-		    enc.visit_encounter_id = visit_encounter_id
-		    enc.date_created = encounter.date_created
-		    enc.creator = encounter.creator
- 		    (encounter.observations || []).each do |ob|  
- 		    
- 		    end
+      enc.patient_id = encounter.patient_id
+      enc.visit_encounter_id = visit_encounter_id
+      enc.date_created = encounter.date_created
+      enc.creator = encounter.creator
+      give_drugs_count = 1
+      (encounter.orders || []).each do |order|  
+        (order.drug_orders || []).each do |drug_order|
+          self.assign_drugs_dispensed(enc,drug_order,give_drugs_count)
+          give_drugs_count+=1
+        end
+      end
+    end
   end
+
 end
 
+def self.assign_drugs_dispensed(encounter,drug_order,count)
+  case count
+    when 1
+      encounter.dispensed_quantity1 = drug_order.quantity
+      encounter.drug_name1 = drug_order.drug.name
+    when 2
+      encounter.dispensed_quantity2 = drug_order.quantity
+      encounter.drug_name2 = drug_order.drug.name
+    when 3
+      encounter.dispensed_quantity4 = drug_order.quantity
+      encounter.drug_name4 = drug_order.drug.name
+    when 5
+      encounter.dispensed_quantity5 = drug_order.quantity
+      encounter.drug_name5 = drug_order.drug.name
+    when 5
+      encounter.dispensed_quantity1 = drug_order.quantity
+      encounter.drug_name1 = drug_order.drug.name
+  end
+end
 
 def self.check_for_visitdate(patient_id,encounter_date)                                                 
   vdate = VisitEncounter.find(:first,                                    
