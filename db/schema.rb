@@ -89,6 +89,13 @@ ActiveRecord::Schema.define(:version => 20130130144218) do
     t.date    "date_of_hiv_pos_test"
     t.date    "date_of_hiv_pos_test_estimated"
     t.string  "location_of_hiv_pos_test",                                        :null => false
+    t.string  "arv_number_at_that_site"
+    t.string  "location_of_art_initiation"
+    t.string  "taken_arvs_in_last_two_months"
+    t.string  "taken_arvs_in_last_two_weeks"
+    t.string  "has_transfer_letter"
+    t.string  "site_transferred_from"
+    t.date    "date_of_art_initiation"
     t.string  "ever_registered_at_art",         :limit => 25
     t.string  "ever_received_arv",              :limit => 25
     t.string  "last_arv_regimen"
