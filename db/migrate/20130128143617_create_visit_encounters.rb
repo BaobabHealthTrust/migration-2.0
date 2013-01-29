@@ -6,9 +6,9 @@ EOF
 
 ActiveRecord::Base.connection.execute <<EOF
 create table 'visit_encounters'(
-	'id' int(11) NOT NULL auto_increment,
+	'id' int NOT NULL auto_increment,
 	'visit_date' date NOT NULL default '0000-00-00',
-	'patient_id' int(11) not null 
+	'patient_id' int not null 
 );
 EOF
   end
