@@ -31,8 +31,7 @@ def start
 	  enc_type = ['HIV first visit']	
 		enc_type.each do |enc_type|
 		 		encounters = Encounter.find(:all,
-		 :conditions => [" patient_id = ? and encounter_type = ?", patient.id, self.get_encounter(enc_type)],
-		 :group => "date(encounter_datetime)")
+		 :conditions => [" patient_id = ? and encounter_type = ?", patient.id, self.get_encounter(enc_type)])
 
       encounters.each do |enc|
         visit_encounter_id = self.check_for_visitdate(patient.id,enc.encounter_datetime.to_date)
@@ -81,8 +80,8 @@ def self.create_record(visit_encounter_id, encounter)
           when 'DATE LAST ARVS TAKEN'
             enc.date_last_arv_taken = ob.value_datetime
         end
+        enc.save
       end
-      enc.save
   end
 end
 
