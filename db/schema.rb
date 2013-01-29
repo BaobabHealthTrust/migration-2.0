@@ -11,62 +11,7 @@
 
 ActiveRecord::Schema.define(:version => 20130130144218) do
 
-  create_table "first_visit_encounters", :force => true do |t|
-    t.integer "visit_encounter_id",                                              :null => false
-    t.integer "patient_id",                                                      :null => false
-    t.string  "agrees_to_follow_up",            :limit => 40,                    :null => false
-    t.date    "date_of_hiv_pos_test"
-    t.date    "date_of_hiv_pos_test_estimated"
-    t.string  "location_of_hiv_pos_test",                                        :null => false
-    t.string  "ever_registered_at_art",         :limit => 25
-    t.string  "ever_received_arv",              :limit => 25
-    t.string  "last_arv_regimen"
-    t.date    "date_last_arv_taken"
-    t.date    "date_last_arv_taken_estimated"
-    t.boolean "voided",                                       :default => false, :null => false
-    t.string  "void_reason"
-    t.date    "date_voided"
-    t.integer "voided_by"
-    t.date    "date_created",                                                    :null => false
-    t.integer "creator"
-  end
-
-  create_table "give_drugs_encounters", :force => true do |t|
-    t.integer "visit_date",                             :null => false
-    t.integer "patient_id",                             :null => false
-    t.string  "drug_name1"
-    t.integer "dispensed_quantity1"
-    t.string  "drug_name2"
-    t.integer "dispensed_quantity2"
-    t.string  "drug_name3"
-    t.integer "dispensed_quantity3"
-    t.string  "drug_name4"
-    t.integer "dispensed_quantity4"
-    t.string  "drug_name5"
-    t.integer "dispensed_quantity5"
-    t.boolean "voided",              :default => false, :null => false
-    t.string  "void_reason"
-    t.date    "date_voided"
-    t.integer "voided_by"
-    t.date    "date_created",                           :null => false
-    t.integer "creator",                                :null => false
-  end
-
-  create_table "guardians", :force => true do |t|
-    t.integer "patient_id",                      :null => false
-    t.string  "name"
-    t.string  "relationship"
-    t.string  "family_name"
-    t.string  "gender"
-    t.boolean "voided",       :default => false, :null => false
-    t.string  "void_reason"
-    t.date    "date_voided"
-    t.integer "voided_by"
-    t.date    "date_created",                    :null => false
-    t.integer "creator",                         :null => false
-  end
-
-  create_table "hiv_staging_encounters", :force => true do |t|
+  create_table "art_visit_encounters", :force => true do |t|
     t.integer "visit_encounter_id",                               :null => false
     t.integer "patient_id",                                       :null => false
     t.string  "patient_pregnant",                   :limit => 25
@@ -135,6 +80,132 @@ ActiveRecord::Schema.define(:version => 20130130144218) do
     t.integer "number_of_condoms_given"
     t.string  "depo_provera_given",                 :limit => 25
     t.string  "continue_treatment_at_clinic",       :limit => 25
+  end
+
+  create_table "first_visit_encounters", :force => true do |t|
+    t.integer "visit_encounter_id",                                              :null => false
+    t.integer "patient_id",                                                      :null => false
+    t.string  "agrees_to_follow_up",            :limit => 40,                    :null => false
+    t.date    "date_of_hiv_pos_test"
+    t.date    "date_of_hiv_pos_test_estimated"
+    t.string  "location_of_hiv_pos_test",                                        :null => false
+    t.string  "ever_registered_at_art",         :limit => 25
+    t.string  "ever_received_arv",              :limit => 25
+    t.string  "last_arv_regimen"
+    t.date    "date_last_arv_taken"
+    t.date    "date_last_arv_taken_estimated"
+    t.boolean "voided",                                       :default => false, :null => false
+    t.string  "void_reason"
+    t.date    "date_voided"
+    t.integer "voided_by"
+    t.date    "date_created",                                                    :null => false
+    t.integer "creator"
+  end
+
+  create_table "give_drugs_encounters", :force => true do |t|
+    t.integer "visit_date",                             :null => false
+    t.integer "patient_id",                             :null => false
+    t.string  "drug_name1"
+    t.integer "dispensed_quantity1"
+    t.string  "drug_name2"
+    t.integer "dispensed_quantity2"
+    t.string  "drug_name3"
+    t.integer "dispensed_quantity3"
+    t.string  "drug_name4"
+    t.integer "dispensed_quantity4"
+    t.string  "drug_name5"
+    t.integer "dispensed_quantity5"
+    t.boolean "voided",              :default => false, :null => false
+    t.string  "void_reason"
+    t.date    "date_voided"
+    t.integer "voided_by"
+    t.date    "date_created",                           :null => false
+    t.integer "creator",                                :null => false
+  end
+
+  create_table "guardians", :force => true do |t|
+    t.integer "patient_id",                      :null => false
+    t.string  "name"
+    t.string  "relationship"
+    t.string  "family_name"
+    t.string  "gender"
+    t.boolean "voided",       :default => false, :null => false
+    t.string  "void_reason"
+    t.date    "date_voided"
+    t.integer "voided_by"
+    t.date    "date_created",                    :null => false
+    t.integer "creator",                         :null => false
+  end
+
+  create_table "hiv_staging_encounters", :force => true do |t|
+    t.integer "visit_encounter_id",                                                                      :null => false
+    t.integer "patient_id",                                                                              :null => false
+    t.string  "patient_pregnant",                                       :limit => 25
+    t.string  "patient_breast_feeding",                                 :limit => 25
+    t.string  "CD4_count_available",                                    :limit => 25
+    t.integer "CD4_count"
+    t.string  "CD4_count_modifier",                                     :limit => 5
+    t.float   "CD4_count_percentage"
+    t.date    "date_of_cd4_count"
+    t.string  "asymptomatic",                                           :limit => 25
+    t.string  "persistent_generalized_lymphadenopathy",                 :limit => 25
+    t.string  "unspecified_stage_1_cond",                               :limit => 25
+    t.string  "molluscumm_contagiosum",                                 :limit => 25
+    t.string  "wart_virus_infection_extensive",                         :limit => 25
+    t.string  "oral_ulcerations_recurrent",                             :limit => 25
+    t.string  "parotid_enlargement_persistent_unexplained",             :limit => 25
+    t.string  "lineal_gingival_erythema",                               :limit => 25
+    t.string  "herpes_zoster",                                          :limit => 25
+    t.string  "respiratory_tract_infections_recurrent",                 :limit => 25
+    t.string  "unspecified_stage2_condition",                           :limit => 25
+    t.string  "angular_chelitis",                                       :limit => 25
+    t.string  "papular_prurtic_eruptions",                              :limit => 25
+    t.string  "hepatosplenomegaly_unexplained",                         :limit => 25
+    t.string  "oral_hairy_leukoplakia",                                 :limit => 25
+    t.string  "severe_weight_loss",                                     :limit => 25
+    t.string  "fever_persistent_unexplained",                           :limit => 25
+    t.string  "pulmonary_tuberculosis",                                 :limit => 25
+    t.string  "pulmonary_tuberculosis_last_2_years",                    :limit => 25
+    t.string  "severe_bacterial_infection",                             :limit => 25
+    t.string  "bacterial_pnuemonia",                                    :limit => 25
+    t.string  "symptomatic_lymphoid_interstitial_pnuemonitis",          :limit => 25
+    t.string  "chronic_hiv_assoc_lung_disease",                         :limit => 25
+    t.string  "unspecified_stage3_condition",                           :limit => 25
+    t.string  "aneamia",                                                :limit => 25
+    t.string  "neutropaenia",                                           :limit => 25
+    t.string  "thrombocytopaenia_chronic",                              :limit => 25
+    t.string  "diarhoea",                                               :limit => 25
+    t.string  "oral_candidiasis",                                       :limit => 25
+    t.string  "acute_necrotizing_ulcerative_gingivitis",                :limit => 25
+    t.string  "lymph_node_tuberculosis",                                :limit => 25
+    t.string  "toxoplasmosis_of_brain",                                 :limit => 25
+    t.string  "cryptococcal_meningitis",                                :limit => 25
+    t.string  "progressive_multifocal_leukoencephalopathy",             :limit => 25
+    t.string  "disseminated_mycosis",                                   :limit => 25
+    t.string  "candidiasis_of_oesophagus",                              :limit => 25
+    t.string  "extrapulmonary_tuberculosis",                            :limit => 25
+    t.string  "Cerebral_non_hodgkin_lymphoma",                          :limit => 25
+    t.string  "Kaposi's_sarcoma",                                       :limit => 25
+    t.string  "hiv_encephalopathy",                                     :limit => 25
+    t.string  "bacterial_infections_severe_recurrent",                  :limit => 25
+    t.string  "unspecified_stage_4_condition",                          :limit => 25
+    t.string  "pnuemocystis_pnuemonia",                                 :limit => 25
+    t.string  "disseminated_non_tuberculosis_mycobactierial_infection", :limit => 25
+    t.string  "cryptosporidiosis",                                      :limit => 25
+    t.string  "isosporiasis",                                           :limit => 25
+    t.string  "symptomatic_hiv_asscoiated_nephropathy",                 :limit => 25
+    t.string  "chronic_herpes_simplex_infection",                       :limit => 25
+    t.string  "cytomegalovirus_infection",                              :limit => 25
+    t.string  "toxoplasomis_of_the_brain_1month",                       :limit => 25
+    t.string  "recto_vaginal_fitsula",                                  :limit => 25
+    t.string  "reason_for_starting_art",                                :limit => 25
+    t.string  "WHO_stage"
+    t.boolean "voided",                                                               :default => false, :null => false
+    t.string  "void_reason"
+    t.date    "date_voided"
+    t.integer "voided_by"
+    t.date    "date_created"
+    t.integer "creator"
   end
 
   create_table "outcome_encounters", :force => true do |t|
