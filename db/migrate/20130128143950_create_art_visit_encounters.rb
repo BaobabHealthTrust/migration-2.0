@@ -1,11 +1,11 @@
 class CreateArtVisitEncounters < ActiveRecord::Migration
   def self.up
 ActiveRecord::Base.connection.execute <<EOF
-DROP TABLE IF EXISTS `hiv_staging_encounters`;
+DROP TABLE IF EXISTS `art_visit_encounters`;
 EOF
 
 ActiveRecord::Base.connection.execute <<EOF
-create table `hiv_staging_encounters` (
+create table `art_visit_encounters` (
 `id` int not null auto_increment primary key,
 `visit_encounter_id` int not null,
 `patient_id` int not null,
