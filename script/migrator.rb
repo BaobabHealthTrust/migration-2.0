@@ -17,7 +17,6 @@ def start
 
 	patients = Patient.find(:all, 
 	:joins => "inner join encounter as e on e.patient_id = patient.patient_id",
-  :conditions =>["e.patient_id = 15586"],
 	:group => "e.patient_id",:limit => 10)
 	
 	count = patients.length
@@ -104,11 +103,11 @@ def self.get_encounter(type)
  	when 'ART visit'
  	 return Artvisit.id
  	when 'HIV Reception'
+ 		return Heiwei.id
  		return 	Hivrecp.id
  	when 'HIV first visit'
  		return Hivfirst.id
  	when 'Height/Weight' 
- 		return Heiwei.id
 	when 'HIV staging' 
 		return Hivstage.id
 	when 'Update outcome'
