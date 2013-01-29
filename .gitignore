@@ -1,0 +1,8 @@
+*.swp
+*.swo
+config/database.yml
+config/application.yml
+config/settings.yml
+schema.rb
+*~
+Gemfile.lock
