@@ -13,13 +13,13 @@
 	Hivstage = EncounterType.find_by_name("HIV staging")
 	Updateoutcome	= EncounterType.find_by_name("Update outcome")			
 	Givedrug= EncounterType.find_by_name("Give Drugs")		
-	Preart = EncounterType.find_by_name("Pre art visit")
+	Preart = EncounterType.find_by_name("Pre ART visit")
 	
 def start
 
 	patients = Patient.find(:all, 
 	:joins => "inner join encounter as e on e.patient_id = patient.patient_id",
-	:group => "e.patient_id",:limit => 10)
+	:group => "e.patient_id",:limit => 100)
 	
 	count = patients.length
 	puts "Number of patients to be migrated #{count}"
@@ -28,17 +28,12 @@ def start
 	patients.each do |patient|
 		 enc_type = ["HIV Reception", "HIV first visit", "Height/Weight", 
 		             "HIV staging", "ART visit", "Update outcome", 
-		             "Give Drugs", "Pre ART visit"]	
-		enc_type = ["ART visit"]
+		             "Give drugs", "Pre ART visit"]	             
+		enc_type = ["Update outcome"]
 		enc_type.each do |enc_type|
-		 		encounters = Encounter.find(:all,
-		 :conditions => [" patient_id = ? and encounter_type = ?", patient.id, self.get_encounter(enc_type)])
-
-      encounters.each do |enc|
-        visit_encounter_id = self.check_for_visitdate(patient.id,enc.encounter_datetime.to_date)
-        self.create_record(visit_encounter_id, enc)
-      end
-		end
+	 		encounters = Encounter.find(:all,
+			 :conditions => [" patient_id = ? and encounter_type = ?", patient.id, self.get_encounter(enc_type)])
+			end
 	end
 
 end
@@ -228,18 +223,17 @@ def self.create_vitals_record(visit_encounter_id, encounter)
 end
 
 def	self.create_hiv_reception_record(visit_encounter_id, encounter)
-	#	    enc = VitalsEncounter.new()
-		#    enc.patient_id = encounter.patient_id
-		    #enc.visit_encounter_id = visit_encounter_id
-		    #enc.date_created = encounter.date_created
-		    #enc.creator = encounter.creator
-		    #(encounter.observations || []).each do |ob|
-		     # case ob.concept.name.upcase
-		     
-		
-				#  end
-			#	end
-#  enc.save
+	enc = HivReceptionEncounters.new()
+	enc.patient_id = encounter.patient_id
+	enc.visit_encounter_id = visit_encounter_id
+	enc.date_created = encounter.date_created
+	enc.creator = encounter.creator
+	(encounter.observations || []).each do |ob|
+	  # case ob.concept.name.upcase
+		    
+		#  end
+	end
+  enc.save
 end
 
 def self.create_pre_art_record(visit_encounter_id, encounter)
@@ -251,7 +245,7 @@ def self.create_pre_art_record(visit_encounter_id, encounter)
 	(encounter.observations || []).each do |ob|
   	self.repeated_obs(enc, ob)
 	end
-	#drug_induced_symptom (enc)
+	drug_induced_symptom (enc)
   enc.save
 end
 
@@ -288,9 +282,10 @@ def	self.create_art_encounter(visit_encounter_id, encounter)
 			enc.drug4
 			enc.dosage4
 			enc.frequency4
-			enc.prescription_duration
+
 =end
 	end
+	self.drug_induced_symptom(enc) rescue nil
 	enc.save
 end
 
@@ -307,7 +302,7 @@ def	self.create_hiv_staging_encounter(visit_encounter_id, encounter)
 end
 
 def self.repeated_obs(enc, ob)
-	puts ob.concept.name
+
 	case ob.concept.name.upcase
     when 'PREGNANT'
      	enc.patient_pregnant = Concept.find(ob.value_coded).name
@@ -353,6 +348,8 @@ def self.repeated_obs(enc, ob)
 			enc.refer_to_clinician = Concept.find(ob.value_coded).name
 		when 'PRESCRIBE ARVS THIS VISIT'
 			enc.prescribe_arv = Concept.find(ob.value_coded).name
+		when 'PRESCRIPTION TIME PERIOD'
+			enc.prescription_duration
 		when 'ARV REGIMEN'
 			enc.arv_regimen = Concept.find(ob.value_coded).name
 		when 'PRESCRIBE COTRIMOXAZOLE (CPT)'
@@ -481,42 +478,41 @@ def self.repeated_obs(enc, ob)
 	end
 end
 
-def drug_induced_symptom (enc)
-
-			if enc.abdominal_pains.to_upcase == 'YES DRUG INDUCED' 
+def self.drug_induced_symptom (enc) 
+			if enc.abdominal_pains.upcase == 'YES DRUG INDUCED' 
 					enc.drug_induced_abdominal_pains = 'Yes'
 			end
-			if enc.anorexia.to_upcase == 'YES DRUG INDUCED' 
+			if enc.anorexia.upcase == 'YES DRUG INDUCED' 
 					enc.drug_induced_anorexia = 'Yes'
 			end
-			if enc.diarrhoea.to_upcase == 'YES DRUG INDUCED' 
+			if enc.diarrhoea.upcase == 'YES DRUG INDUCED' 
 					enc.drug_induced_diarrhoea = 'Yes'
 			end			
-			if enc.jaundice.to_upcase == 'YES DRUG INDUCED' 
+			if enc.jaundice.upcase == 'YES DRUG INDUCED' 
 					enc.drug_induced_jaundice = 'Yes'
 			end			
-			if enc.leg_pain_numbness.to_upcase == 'YES DRUG INDUCED' 
+			if enc.leg_pain_numbness.upcase == 'YES DRUG INDUCED' 
 				enc.drug_induced_leg_pain_numbness = 'Yes'
 			end
-			if enc.vomit.to_upcase == 'YES DRUG INDUCED' 
-				enc.drug_induced_vomit = Concept(ob.value_coded).name
+			if enc.vomit.upcase == 'YES DRUG INDUCED' 
+				enc.drug_induced_vomit = 'Yes'
 			end
-			if enc.peripheral_neuropathy.to_upcase == 'YES DRUG INDUCED' 
+			if enc.peripheral_neuropathy.upcase == 'YES DRUG INDUCED' 
 				enc.drug_induced_peripheral_neuropathy = 'Yes'
 			end			
-			if enc.hepatitis.to_upcase == 'YES DRUG INDUCED' 
+			if enc.hepatitis.upcase == 'YES DRUG INDUCED' 
 				enc.drug_induced_hepatitis = 'Yes'
 			end
-			if enc.anaemia.to_upcase == 'YES DRUG INDUCED' 
+			if enc.anaemia.upcase == 'YES DRUG INDUCED' 
 				enc.drug_induced_anaemia = 'Yes'
 			end
-			if enc.lactic_acidosis.to_upcase == 'YES DRUG INDUCED' 
+			if enc.lactic_acidosis.upcase == 'YES DRUG INDUCED' 
 				enc.drug_induced_lactic_acidosis = 'Yes'
 			end			
-			if enc.lipodystrophy.to_upcase == 'YES DRUG INDUCED' 
+			if enc.lipodystrophy.upcase == 'YES DRUG INDUCED' 
 				enc.drug_induced_lipodystrophy = 'Yes'
 			end
-			if enc.skin_rash.to_upcase == 'YES DRUG INDUCED' 
+			if enc.skin_rash.upcase == 'YES DRUG INDUCED' 
 				enc.drug_induced_skin_rash = 'Yes'
 			end
 

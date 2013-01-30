@@ -45,7 +45,7 @@ create table `art_visit_encounters` (
 `tb_status` varchar(25),
 `refer_to_clinician` varchar(25),
 `prescribe_arv` varchar(25),
-`Drug_name_brought_to_clinic1` varchar(25),
+`drug_name_brought_to_clinic1` varchar(25),
 `drug_quantity_brought_to_clinic1` varchar(25),
 `drug_left_at_home1` varchar(25),
 `drug_name_brought_to_clinic2` varchar(25),
