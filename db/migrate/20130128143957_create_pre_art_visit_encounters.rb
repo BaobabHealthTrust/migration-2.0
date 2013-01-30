@@ -29,8 +29,7 @@ ActiveRecord::Base.connection.execute <<EOF
 `lactic_acidosis` varchar(25),
 `lipodystrophy` varchar(25),
 `skin_rash` varchar(25),
-`other_symptoms` varchar(25),
-`drug_induced_Abdominal_pains` varchar(25),
+`drug_induced_abdominal_pains` varchar(25),
 `drug_induced_anorexia` varchar(25),
 `drug_induced_diarrhoea` varchar(25),
 `drug_induced_jaundice` varchar(25),
@@ -43,12 +42,14 @@ ActiveRecord::Base.connection.execute <<EOF
 `drug_induced_lipodystrophy` varchar(25),
 `drug_induced_skin_rash` varchar(25),
 `drug_induced_other_symptom` varchar(25),
-`TB_status` varchar(255),
+`tb_status` varchar(255),
 `refer_to_clinician` varchar(25),
 `prescribe_cpt` varchar(25),
 `prescription_duration` varchar(25),
 `number_of_condoms_given` int ,
-`prescribe_ipt` varchar(25)
+`prescribe_ipt` varchar(25),
+`date_created` date default null,
+`creator` int(11)
 
 	);
 EOF

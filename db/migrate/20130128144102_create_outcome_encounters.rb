@@ -7,10 +7,10 @@ EOF
 ActiveRecord::Base.connection.execute <<EOF
 create table `outcome_encounters`(
 `id` int not null auto_increment primary key,
-`visit_date`int not null,
+`visit_encounter_id` int not null,
 `patient_id` int not null,
 `state` varchar(255),
-`outcome_date` date not null,
+`outcome_date` date ,
 `transferred_out_location` varchar(255),
 `voided` int not null default 0,
 `void_reason` varchar(255),
