@@ -19,6 +19,7 @@ def start
 
 	patients = Patient.find(:all, 
 	:joins => "inner join encounter as e on e.patient_id = patient.patient_id",
+  :conditions => ["e.patient_id=2"],
 	:group => "e.patient_id",:limit => 10)
 	
 	count = patients.length
@@ -29,7 +30,7 @@ def start
 		 enc_type = ["HIV Reception", "HIV first visit", "Height/Weight", 
 		             "HIV staging", "ART visit", "Update outcome", 
 		             "Give Drugs", "Pre ART visit"]	
-		enc_type = ["HIV first visit"]
+		enc_type = ["ART visit"]
 		enc_type.each do |enc_type|
 		 		encounters = Encounter.find(:all,
 		 :conditions => [" patient_id = ? and encounter_type = ?", patient.id, self.get_encounter(enc_type)])
@@ -254,42 +255,103 @@ def self.create_pre_art_record(visit_encounter_id, encounter)
   enc.save
 end
 
+def self.assign_drugs_prescribed(enc,prescribed_drug_name_hash,prescribed_drug_dosage_hash,prescribed_drug_frequency_hash) 
+  count = 1
+  (prescribed_drug_name_hash).each do | drug_name, name |
+    case count
+      when 1
+        enc.drug1 = drug_name
+        enc.dosage1 = prescribed_drug_dosage_hash[drug_name]
+        enc.frequency1 = prescribed_drug_frequency_hash[drug_name]
+        count+=1
+      when 2
+        enc.drug2 = drug_name
+        enc.dosage2 = prescribed_drug_dosage_hash[drug_name]
+        enc.frequency2 = prescribed_drug_frequency_hash[drug_name]
+        count+=1
+      when 3
+        enc.drug3 = drug_name
+        enc.dosage3 = prescribed_drug_dosage_hash[drug_name]
+        enc.frequency3 = prescribed_drug_frequency_hash[drug_name]
+        count+=1
+      when 4
+        enc.drug4 = drug_name
+        enc.dosage4 = prescribed_drug_dosage_hash[drug_name]
+        enc.frequency4 = prescribed_drug_frequency_hash[drug_name]
+        count+=1
+    end
+  end
+end
+
+def self.assign_drugs_counted(encounter,obs,count)
+  case count
+    when 1
+      encounter.drug_name_brought_to_clinic1 = Drug.find(obs.value_drug).name 
+      encounter.drug_quantity_brought_to_clinic1 = obs.value_numeric
+    when 2
+      encounter.drug_name_brought_to_clinic2 = Drug.find(obs.value_drug).name 
+      encounter.drug_quantity_brought_to_clinic2 = obs.value_numeric
+    when 3
+      encounter.drug_name_brought_to_clinic3 = Drug.find(obs.value_drug).name 
+      encounter.drug_quantity_brought_to_clinic3 = obs.value_numeric
+    when 4
+      encounter.drug_name_brought_to_clinic4 = Drug.find(obs.value_drug).name 
+      encounter.drug_quantity_brought_to_clinic4 = obs.value_numeric
+  end
+end
+
+def self.assign_drugs_counted_but_not_brought(encounter,obs,count)
+  case count
+    when 1
+      encounter.drug_left_at_home1 = obs.value_numeric
+    when 2
+      encounter.drug_left_at_home2 = obs.value_numeric
+    when 3
+      encounter.drug_left_at_home3 = obs.value_numeric
+    when 4
+      encounter.drug_left_at_home4 = obs.value_numeric
+  end
+end
+
 def	self.create_art_encounter(visit_encounter_id, encounter)		
   enc = ArtVisitEncounter.new()
 	enc.patient_id = encounter.patient_id
 	enc.visit_encounter_id = visit_encounter_id
 	enc.date_created = encounter.date_created
 	enc.creator = encounter.creator
+
+  drug_name_brought_to_clinic_count = 1
+  drug_name_not_brought_to_clinic_count = 1
+  prescribed_drug_name_hash = {}
+  prescribed_drug_dosage_hash = {}
+  prescribed_drug_frequency_hash = {}
+
 	(encounter.observations || []).each do |ob|
-#  		self.repeated_obs(enc, ob)
-=begin		
-			enc.drug_name_brought_to_clinic1
-			enc.drug_quantity_brought_to_clinic1
-			enc.drug_left_at_home1
-			enc.drug_name_brought_to_clinic2
-			enc.drug_quantity_brought_to_clinic2
-			enc.drug_left_at_home2
-			enc.drug_name_brought_to_clinic3
-			enc.drug_quantity_brought_to_clinic3
-			enc.drug_left_at_home3
-			enc.drug_name_brought_to_clinic4
-			enc.drug_quantity_brought_to_clinic4
-			enc.drug_left_at_home4
-			enc.drug1
-			enc.dosage1
-			enc.frequency1
-			enc.drug2
-			enc.dosage2
-			enc.frequency2
-			enc.drug3
-			enc.dosage3
-			enc.frequency3
-			enc.drug4
-			enc.dosage4
-			enc.frequency4
-			enc.prescription_duration
-=end
+    case ob.concept.name.upcase
+      when 'WHOLE TABLETS REMAINING AND BROUGHT TO CLINIC'	
+        self.assign_drugs_counted(enc,ob,drug_name_brought_to_clinic_count)
+        drug_name_brought_to_clinic_count+=1
+      when 'WHOLE TABLETS REMAINING BUT NOT BROUGHT TO CLINIC'
+        self.assign_drugs_counted_but_not_brought(enc,ob,drug_name_not_brought_to_clinic_count)
+        drug_name_not_brought_to_clinic_count+=1
+      when 'PRESCRIPTION TIME PERIOD'	
+        enc.prescription_duration = ob.value_text
+      when 'PRESCRIBE RECOMMENDED DOSAGE'
+      when 'PRESCRIBED DOSE'
+        drug_name = Drug.find(ob.value_drug).name
+        if prescribed_drug_name_hash[drug_name].blank?
+          prescribed_drug_name_hash[drug_name] = drug_name
+          prescribed_drug_dosage_hash[drug_name] = "#{ob.value_numeric}"
+          prescribed_drug_frequency_hash[drug_name] = ob.value_text
+        else
+          prescribed_drug_dosage_hash[drug_name] += "-#{ob.value_numeric}"
+          prescribed_drug_frequency_hash[drug_name] += "-#{ob.value_text}"
+        end
+    end
 	end
+  unless prescribed_drug_name_hash.blank?
+    self.assign_drugs_prescribed(enc,prescribed_drug_name_hash,prescribed_drug_dosage_hash,prescribed_drug_frequency_hash) 
+  end
 	enc.save
 end
 
