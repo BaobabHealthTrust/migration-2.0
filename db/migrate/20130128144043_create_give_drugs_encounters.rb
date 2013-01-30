@@ -8,7 +8,7 @@ EOF
 ActiveRecord::Base.connection.execute <<EOF
 create table `give_drugs_encounters`(
 `id` int not null auto_increment primary key,
-`visit_date` int not null,
+`visit_encounter_id` int not null,
 `patient_id` int not null,
 `drug_name1` varchar(255),
 `dispensed_quantity1` int,
