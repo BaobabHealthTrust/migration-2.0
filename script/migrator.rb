@@ -7,7 +7,7 @@
 	
 	
 	Hivfirst = EncounterType.find_by_name("HIV first visit")
-	Hivrecp = EncounterType.find_by_name("HIV reception")
+	Hivrecp = EncounterType.find_by_name("HIV Reception")
 	Artvisit = EncounterType.find_by_name("ART visit")
 	Heiwei = EncounterType.find_by_name("Height/Weight")
 	Hivstage = EncounterType.find_by_name("HIV staging")
@@ -19,21 +19,28 @@ def start
 
 	patients = Patient.find(:all, 
 	:joins => "inner join encounter as e on e.patient_id = patient.patient_id",
-	:group => "e.patient_id",:limit => 100)
+	:group => "e.patient_id",:limit =>10)
 	
 	count = patients.length
 	puts "Number of patients to be migrated #{count}"
 	sleep 2 
-	
+	done = 0
 	patients.each do |patient|
 		 enc_type = ["HIV Reception", "HIV first visit", "Height/Weight", 
 		             "HIV staging", "ART visit", "Update outcome", 
 		             "Give drugs", "Pre ART visit"]	             
-		enc_type = ["Update outcome"]
+		enc_type = ["HIV Reception"]
 		enc_type.each do |enc_type|
 	 		encounters = Encounter.find(:all,
 			 :conditions => [" patient_id = ? and encounter_type = ?", patient.id, self.get_encounter(enc_type)])
-			end
+			  encounters.each do |enc|
+        visit_encounter_id = self.check_for_visitdate(patient.id,enc.encounter_datetime.to_date)
+        self.create_record(visit_encounter_id, enc)
+        end
+		end
+#		        done +=1
+ #       puts done.to_s
+
 	end
 
 end
@@ -87,7 +94,7 @@ def self.create_record(visit_encounter_id, encounter)
     	self.create_give_drug_record(visit_encounter_id, encounter)
 		when 'HEIGHT/WEIGHT'
     	self.create_vitals_record(visit_encounter_id, encounter)
-		when 'HIV RECPTION'
+		when 'HIV RECEPTION'
 			self.create_hiv_reception_record(visit_encounter_id, encounter)
 		when 'PRE ART VISIT'
 			self.create_pre_art_record(visit_encounter_id, encounter)
@@ -169,14 +176,14 @@ def self.assign_drugs_dispensed(encounter,drug_order,count)
       encounter.dispensed_quantity2 = drug_order.quantity
       encounter.drug_name2 = drug_order.drug.name
     when 3
+      encounter.dispensed_quantity3 = drug_order.quantity
+      encounter.drug_name3 = drug_order.drug.name
+    when 4
       encounter.dispensed_quantity4 = drug_order.quantity
       encounter.drug_name4 = drug_order.drug.name
     when 5
       encounter.dispensed_quantity5 = drug_order.quantity
       encounter.drug_name5 = drug_order.drug.name
-    when 5
-      encounter.dispensed_quantity1 = drug_order.quantity
-      encounter.drug_name1 = drug_order.drug.name
   end
 end
 
@@ -192,7 +199,9 @@ def self.create_update_outcome(visit_encounter_id, encounter)
 			  when 'OUTCOME'
 					enc.state = Concept.find(ob.value_coded).name
 					enc.outcome_date = ob.obs_datetime
-					#enc.transferred_out_location
+					if enc.state =='Transfer Out(With Transfer Note)'
+						#enc.transferred_out_location
+					end
 				 end 
 		  end
 		  
@@ -223,15 +232,19 @@ def self.create_vitals_record(visit_encounter_id, encounter)
 end
 
 def	self.create_hiv_reception_record(visit_encounter_id, encounter)
-	enc = HivReceptionEncounters.new()
+	enc = HivReceptionEncounter.new()
 	enc.patient_id = encounter.patient_id
 	enc.visit_encounter_id = visit_encounter_id
 	enc.date_created = encounter.date_created
 	enc.creator = encounter.creator
 	(encounter.observations || []).each do |ob|
-	  # case ob.concept.name.upcase
-		    
-		#  end
+		case ob.concept.name.upcase
+ 		   when 'GUARDIAN PRESENT'
+ 		     enc.guardian_present = Concept.find(ob.value_coded).name
+		   when 'PATIENT PRESENT' 
+		     enc.patient_present = Concept.find(ob.value_coded).name
+    end
+		
 	end
   enc.save
 end
@@ -245,7 +258,7 @@ def self.create_pre_art_record(visit_encounter_id, encounter)
 	(encounter.observations || []).each do |ob|
   	self.repeated_obs(enc, ob)
 	end
-	drug_induced_symptom (enc)
+	drug_induced_symptom (enc) rescue nil
   enc.save
 end
 
