@@ -1,6 +1,6 @@
 require 'test_helper'
 
-class PatientOutcomeTest < ActiveSupport::TestCase
+class ArtVisitEncounterTest < ActiveSupport::TestCase
   # Replace this with your real tests.
   test "the truth" do
     assert true
