@@ -30,7 +30,7 @@ ActiveRecord::Base.connection.execute <<EOF
 `lipodystrophy` varchar(25),
 `skin_rash` varchar(25),
 `other_symptoms` varchar(25),
-`drug_induced_Abdominal_pains` varchar(25),
+`drug_induced_abdominal_pains` varchar(25),
 `drug_induced_anorexia` varchar(25),
 `drug_induced_diarrhoea` varchar(25),
 `drug_induced_jaundice` varchar(25),

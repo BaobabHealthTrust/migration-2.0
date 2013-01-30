@@ -13,7 +13,7 @@ create table `art_visit_encounters` (
 `patient_breast_feeding` varchar(25),
 `using_family_planning_method` varchar(25), 
 `family_planning_method_used` varchar(25),
-`Abdominal_pains` varchar(25),
+`abdominal_pains` varchar(25),
 `anorexia` varchar(25),
 `cough` varchar(25),
 `diarrhoea` varchar(25),

@@ -29,7 +29,7 @@ def start
 		 enc_type = ["HIV Reception", "HIV first visit", "Height/Weight", 
 		             "HIV staging", "ART visit", "Update outcome", 
 		             "Give Drugs", "Pre ART visit"]	
-		enc_type = ["HIV first visit"]
+		enc_type = ["ART visit"]
 		enc_type.each do |enc_type|
 		 		encounters = Encounter.find(:all,
 		 :conditions => [" patient_id = ? and encounter_type = ?", patient.id, self.get_encounter(enc_type)])
@@ -110,6 +110,7 @@ def self.create_hiv_first_visit(visit_encounter_id, encounter)
   enc.patient_id = encounter.patient_id
   enc.visit_encounter_id = visit_encounter_id
   enc.date_created = encounter.date_created
+  enc.creator = encounter.creator
   (encounter.observations || []).each do |ob|
      case ob.concept.name.upcase
        when 'AGREES TO FOLLOWUP'
@@ -248,9 +249,9 @@ def self.create_pre_art_record(visit_encounter_id, encounter)
 	enc.date_created = encounter.date_created
 	enc.creator = encounter.creator
 	(encounter.observations || []).each do |ob|
-  		self.repeated_obs(enc, ob)
+  	self.repeated_obs(enc, ob)
 	end
-	drug_induced_symptom (enc)
+	#drug_induced_symptom (enc)
   enc.save
 end
 
@@ -261,7 +262,7 @@ def	self.create_art_encounter(visit_encounter_id, encounter)
 	enc.date_created = encounter.date_created
 	enc.creator = encounter.creator
 	(encounter.observations || []).each do |ob|
-#  		self.repeated_obs(enc, ob)
+  		self.repeated_obs(enc, ob)
 =begin		
 			enc.drug_name_brought_to_clinic1
 			enc.drug_quantity_brought_to_clinic1
@@ -306,63 +307,64 @@ def	self.create_hiv_staging_encounter(visit_encounter_id, encounter)
 end
 
 def self.repeated_obs(enc, ob)
+	puts ob.concept.name
 	case ob.concept.name.upcase
     when 'PREGNANT'
      	enc.patient_pregnant = Concept.find(ob.value_coded).name
 		when 'BREASTFEEDING'
-  		enc.patient_breast_feeding = Concept(ob.value_coded).name
+  		enc.patient_breast_feeding = Concept.find(ob.value_coded).name
 		when 'CURRENTLY USING FAMILY PLANNING METHOD'
-			enc.using_family_planning_method = Concept(ob.value_coded).name
+			enc.using_family_planning_method = Concept.find(ob.value_coded).name
 		when 'FAMILY PLANNING METHOD'
-			enc.family_planning_method_used = Concept(ob.value_coded).name
+			enc.family_planning_method_used = Concept.find(ob.value_coded).name
 		when 'ABDOMINAL PAIN'
-			enc.abdominal_pains = Concept(ob.value_coded).name
+			enc.abdominal_pains = Concept.find(ob.value_coded).name
 		when 'ANOREXIA'	
-			enc.anorexia = Concept(ob.value_coded).name
+			enc.anorexia = Concept.find(ob.value_coded).name
 		when 'COUGH'	
-			enc.cough = Concept(ob.value_coded).name
+			enc.cough = Concept.find(ob.value_coded).name
 		when 'DIARRHOEA'	
-			enc.diarrhoea = Concept(ob.value_coded).name
+			enc.diarrhoea = Concept.find(ob.value_coded).name
 		when 'FEVER'	
-			enc.fever = Concept(ob.value_coded).name
+			enc.fever = Concept.find(ob.value_coded).name
 		when 'JAUNDICE'	
-			enc.jaundice = Concept(ob.value_coded).name
+			enc.jaundice = Concept.find(ob.value_coded).name
 		when 'LEG PAIN / NUMBNESS'
-			enc.leg_pain_numbness = Concept(ob.value_coded).name
+			enc.leg_pain_numbness = Concept.find(ob.value_coded).name
 		when 'VOMIT'
-			enc.vomit = Concept(ob.value_coded).name
+			enc.vomit = Concept.find(ob.value_coded).name
 		when 'WEIGHT LOSS'
-			enc.weight_loss  = Concept(ob.value_coded).name
+			enc.weight_loss  = Concept.find(ob.value_coded).name
 		when 'PERIPHERAL NEUROPATHY'
-			enc.peripheral_neuropathy = Concept(ob.value_coded).name
+			enc.peripheral_neuropathy = Concept.find(ob.value_coded).name
 		when 'HEPATITIS'
-			enc.hepatitis = Concept(ob.value_coded).name
+			enc.hepatitis = Concept.find(ob.value_coded).name
 		when 'ANAEMIA'
-			enc.anaemia = Concept(ob.value_coded).name
+			enc.anaemia = Concept.find(ob.value_coded).name
 		when 'LACTIC ACIDOSIS'
-			enc.lactic_acidosis = Concept(ob.value_coded).name
+			enc.lactic_acidosis = Concept.find(ob.value_coded).name
 		when 'LIPODYSTROPHY'
-			enc.lipodystrophy = Concept(ob.value_coded).name
+			enc.lipodystrophy = Concept.find(ob.value_coded).name
 		when 'SKIN RASH'
-			enc.skin_rash = Concept(ob.value_coded).name
+			enc.skin_rash = Concept.find(ob.value_coded).name
 		when 'TB STATUS'
-			enc.tb_status = Concept(ob.value_coded).name
+			enc.tb_status = Concept.find(ob.value_coded).name
 		when 'REFER PATIENT TO CLINICIAN'
-			enc.refer_to_clinician = Concept(ob.value_coded).name
+			enc.refer_to_clinician = Concept.find(ob.value_coded).name
 		when 'PRESCRIBE ARVS THIS VISIT'
-			enc.prescribe_arv = Concept(ob.value_coded).name
+			enc.prescribe_arv = Concept.find(ob.value_coded).name
 		when 'ARV REGIMEN'
-			enc.arv_regimen = Concept(ob.value_coded).name
+			enc.arv_regimen = Concept.find(ob.value_coded).name
 		when 'PRESCRIBE COTRIMOXAZOLE (CPT)'
-			enc.prescribe_cpt  = Concept(ob.value_coded).name
+			enc.prescribe_cpt  = Concept.find(ob.value_coded).name
 		when 'PRESCRIBED ISONIAZED (IPT)'
-			enc.prescribe_ipt = Concept(ob.value_coded).name
+			enc.prescribe_ipt = Concept.find(ob.value_coded).name
 		when 'NUMBER OF CONDOMS GIVEN'
 			enc.number_of_condoms_given = ob.value_numeric
 		when 'PRESCRIBED DEPO PROVERA'
-			enc.depo_provera_given = Concept(ob.value_coded).name
+			enc.depo_provera_given = Concept.find(ob.value_coded).name
 		when 'CONTINUE TREATMENT AT CURRENT CLINIC'
-			enc.continue_treatment_at_clinic = Concept(ob.value_coded).name
+			enc.continue_treatment_at_clinic = Concept.find(ob.value_coded).name
 		when 'CD4 COUNT AVAILABLE'
       enc.cd4_count_available = Concept.find(ob.value_coded).name
     when 'CD4 COUNT'
@@ -482,7 +484,7 @@ end
 def drug_induced_symptom (enc)
 
 			if enc.abdominal_pains.to_upcase == 'YES DRUG INDUCED' 
-					enc.drug_induced_Abdominal_pains = 'Yes'
+					enc.drug_induced_abdominal_pains = 'Yes'
 			end
 			if enc.anorexia.to_upcase == 'YES DRUG INDUCED' 
 					enc.drug_induced_anorexia = 'Yes'
