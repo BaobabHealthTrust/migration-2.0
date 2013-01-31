@@ -85,10 +85,10 @@ ActiveRecord::Schema.define(:version => 20130130144218) do
   create_table "first_visit_encounters", :force => true do |t|
     t.integer "visit_encounter_id",                                              :null => false
     t.integer "patient_id",                                                      :null => false
-    t.string  "agrees_to_follow_up",            :limit => 40,                    :null => false
+    t.string  "agrees_to_follow_up",            :limit => 40
     t.date    "date_of_hiv_pos_test"
     t.date    "date_of_hiv_pos_test_estimated"
-    t.string  "location_of_hiv_pos_test",                                        :null => false
+    t.string  "location_of_hiv_pos_test"
     t.string  "arv_number_at_that_site"
     t.string  "location_of_art_initiation"
     t.string  "taken_arvs_in_last_two_months"
