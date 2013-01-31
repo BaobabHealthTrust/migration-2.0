@@ -19,27 +19,16 @@ def start
 
 	patients = Patient.find(:all, 
 	:joins => "inner join encounter as e on e.patient_id = patient.patient_id",
-<<<<<<< HEAD
-  :conditions => ["e.patient_id=2"],
-	:group => "e.patient_id",:limit => 10)
-=======
 	:group => "e.patient_id",:limit =>10)
->>>>>>> e0ec3219d612b00daffa43fac1bb60f5c9e4119c
 	
 	count = patients.length
 	puts "Number of patients to be migrated #{count}"
 	sleep 2 
-	done = 0
 	patients.each do |patient|
 		 enc_type = ["HIV Reception", "HIV first visit", "Height/Weight", 
 		             "HIV staging", "ART visit", "Update outcome", 
-<<<<<<< HEAD
-		             "Give Drugs", "Pre ART visit"]	
-		enc_type = ["ART visit"]
-=======
 		             "Give drugs", "Pre ART visit"]	             
-		enc_type = ["HIV Reception"]
->>>>>>> e0ec3219d612b00daffa43fac1bb60f5c9e4119c
+		enc_type = ["HIV staging"]
 		enc_type.each do |enc_type|
 	 		encounters = Encounter.find(:all,
 			 :conditions => [" patient_id = ? and encounter_type = ?", patient.id, self.get_encounter(enc_type)])
@@ -48,9 +37,6 @@ def start
         self.create_record(visit_encounter_id, enc)
         end
 		end
-#		        done +=1
- #       puts done.to_s
-
 	end
 
 end
@@ -344,8 +330,7 @@ def	self.create_art_encounter(visit_encounter_id, encounter)
   prescribed_drug_frequency_hash = {}
 
 	(encounter.observations || []).each do |ob|
-<<<<<<< HEAD
-    case ob.concept.name.upcase
+		case ob.concept.name.upcase
       when 'WHOLE TABLETS REMAINING AND BROUGHT TO CLINIC'	
         self.assign_drugs_counted(enc,ob,drug_name_brought_to_clinic_count)
         drug_name_brought_to_clinic_count+=1
@@ -365,52 +350,27 @@ def	self.create_art_encounter(visit_encounter_id, encounter)
           prescribed_drug_dosage_hash[drug_name] += "-#{ob.value_numeric}"
           prescribed_drug_frequency_hash[drug_name] += "-#{ob.value_text}"
         end
+      else
+    		self.repeated_obs(enc, ob)    	
     end
-	end
   unless prescribed_drug_name_hash.blank?
     self.assign_drugs_prescribed(enc,prescribed_drug_name_hash,prescribed_drug_dosage_hash,prescribed_drug_frequency_hash) 
   end
-=======
-  		self.repeated_obs(enc, ob)
-=begin		
-			enc.drug_name_brought_to_clinic1
-			enc.drug_quantity_brought_to_clinic1
-			enc.drug_left_at_home1
-			enc.drug_name_brought_to_clinic2
-			enc.drug_quantity_brought_to_clinic2
-			enc.drug_left_at_home2
-			enc.drug_name_brought_to_clinic3
-			enc.drug_quantity_brought_to_clinic3
-			enc.drug_left_at_home3
-			enc.drug_name_brought_to_clinic4
-			enc.drug_quantity_brought_to_clinic4
-			enc.drug_left_at_home4
-			enc.drug1
-			enc.dosage1
-			enc.frequency1
-			enc.drug2
-			enc.dosage2
-			enc.frequency2
-			enc.drug3
-			enc.dosage3
-			enc.frequency3
-			enc.drug4
-			enc.dosage4
-			enc.frequency4
-
-=end
 	end
 	self.drug_induced_symptom(enc) rescue nil
->>>>>>> e0ec3219d612b00daffa43fac1bb60f5c9e4119c
 	enc.save
 end
 
 def	self.create_hiv_staging_encounter(visit_encounter_id, encounter)		
+	startreason = PersonAttributeType.find_by_name("reason antiretrovirals started").person_attribute_type_id
+	whostage =  PersonAttributeType.find_by_name("WHO stage").person_attribute_type_id
 	enc = HivStagingEncounter.new()
   enc.patient_id = encounter.patient_id
   enc.visit_encounter_id = visit_encounter_id
   enc.date_created = encounter.date_created
   enc.creator = encounter.creator
+  enc.who_stage = PersonAttribute.find(:last, :conditions => ["person_id = ? and person_attribute_type_id = ?",encounter.patient_id, whostage]).value 
+  enc.reason_for_starting_art = PersonAttribute.find(:last, :conditions => ["person_id = ? and person_attribute_type_id = ?",encounter.patient_id, startreason]).value 
   (encounter.observations || []).each do |ob|
   		self.repeated_obs(enc, ob)
 	end
@@ -590,13 +550,18 @@ def self.repeated_obs(enc, ob)
     when'WHO STAGE'
       enc.who_stage = Concept.find(ob.value_coded).name
       
-
 	end
 end
 
 def self.drug_induced_symptom (enc) 
+			if enc.lipodystrophy.upcase == 'YES DRUG INDUCED' 
+				enc.drug_induced_lipodystrophy = 'Yes'
+			end
 			if enc.abdominal_pains.upcase == 'YES DRUG INDUCED' 
 					enc.drug_induced_abdominal_pains = 'Yes'
+			end
+			if enc.skin_rash.upcase == 'YES DRUG INDUCED' 
+				enc.drug_induced_skin_rash = 'Yes'
 			end
 			if enc.anorexia.upcase == 'YES DRUG INDUCED' 
 					enc.drug_induced_anorexia = 'Yes'
@@ -625,12 +590,6 @@ def self.drug_induced_symptom (enc)
 			if enc.lactic_acidosis.upcase == 'YES DRUG INDUCED' 
 				enc.drug_induced_lactic_acidosis = 'Yes'
 			end			
-			if enc.lipodystrophy.upcase == 'YES DRUG INDUCED' 
-				enc.drug_induced_lipodystrophy = 'Yes'
-			end
-			if enc.skin_rash.upcase == 'YES DRUG INDUCED' 
-				enc.drug_induced_skin_rash = 'Yes'
-			end
 
 end
 start 
