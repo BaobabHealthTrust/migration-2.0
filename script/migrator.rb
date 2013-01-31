@@ -19,7 +19,7 @@ def start
 
 	patients = Patient.find(:all, 
 	:joins => "inner join encounter as e on e.patient_id = patient.patient_id",
-	:group => "e.patient_id",:limit =>1000)
+	:group => "e.patient_id",:limit =>10)
 	
 	count = patients.length
 	puts "Number of patients to be migrated #{count}"
@@ -28,7 +28,6 @@ def start
 		 enc_type = ["HIV Reception", "HIV first visit", "Height/Weight", 
 		             "HIV staging", "ART visit", "Update outcome", 
 		             "Give drugs", "Pre ART visit"]	             
-		enc_type = [""]
 		enc_type.each do |enc_type|
 	 		encounters = Encounter.find(:all,
 			 :conditions => [" patient_id = ? and encounter_type = ?", patient.id, self.get_encounter(enc_type)])
