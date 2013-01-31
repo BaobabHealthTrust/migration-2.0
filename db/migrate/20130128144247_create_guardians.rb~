@@ -1,0 +1,17 @@
+class CreateGuardians < ActiveRecord::Migration
+  def self.up
+ActiveRecord::Base.connection.execute <<EOF
+drop table if exists 'guardians';
+EOF
+
+ActiveReord::Base.connection.execute <<EOF
+create table 'guardians'(
+
+);
+EOF
+  end
+
+  def self.down
+    drop_table :guardians
+  end
+end

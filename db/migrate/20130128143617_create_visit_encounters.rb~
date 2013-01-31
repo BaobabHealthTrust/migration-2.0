@@ -5,7 +5,7 @@ DROP TABLE IF EXISTS `visit_encounters`;
 EOF
 
 ActiveRecord::Base.connection.execute <<EOF
-create table 'visit_encounters'(
+create table (
 	'id' int(11) NOT NULL auto_increment,
 	'visit_date' date NOT NULL default '0000-00-00',
 	'patient_id' int(11) not null 

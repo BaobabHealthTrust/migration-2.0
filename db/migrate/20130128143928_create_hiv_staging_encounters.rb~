@@ -8,8 +8,8 @@ EOF
 ActiveRecord::Base.connection.execute <<EOF
 create table 'hiv_staging_encounters'(
 'id' int auto_increment not null,
-'visit_encounter_id' int not null,
-'patient_id' int not null,
+'visit_encounter_id' int(11) not null,
+'patient_id' int(11) not null,
 'patient_pregnant' varchar(25) ,
 'patient_breast_feeding' varchar(25),
 'CD4_count_available' varchar(25)

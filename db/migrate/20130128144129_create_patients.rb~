@@ -2,7 +2,7 @@ class CreatePatients < ActiveRecord::Migration
 
 def self.up
 ActiveRecord::Base.connection.execute <<EOF
-	drop table if exits 'patients'	;
+	drop table if exits 'patients'	
 EOF
 
 ActiveRecord::Base.connection.execute <<EOF

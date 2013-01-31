@@ -1,0 +1,16 @@
+class CreateOutcomeEncounters < ActiveRecord::Migration
+  def self.up
+ActiveRecord::Base.connection.execute <<EOF
+drop table if exists 'outcome_encounters'
+EOF
+
+ActiveRecord::Base.connection.execute <<EOF
+create table 'otcom'
+EOF
+
+  end
+
+  def self.down
+    drop_table :outcome_encounters
+  end
+end
