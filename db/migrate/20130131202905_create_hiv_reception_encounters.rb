@@ -1,9 +1,26 @@
 class CreateHivReceptionEncounters < ActiveRecord::Migration
   def self.up
-    create_table :hiv_reception_encounters do |t|
+ActiveRecord::Base.connection.execute <<EOF
+	DROP TABLE IF EXISTS `hiv_reception_encounters`;		
+EOF
 
-      t.timestamps
-    end
+ActiveRecord::Base.connection.execute <<EOF
+create table `hiv_reception_encounters`(
+`id` int not null auto_increment primary key,
+`visit_encounter_id` int not null,
+`patient_id` int not null,
+`guardian` int,
+`patient_present` varchar(255),
+`guardian_present` varchar(255),
+`voided` tinyint(1) not null default 0,
+`void_reason` varchar(255),
+`date_voided` date default null,
+`voided_by` int(11),
+`date_created` date default null,
+`creator` int(11)
+);
+
+EOF
   end
 
   def self.down
