@@ -28,6 +28,7 @@ def start
 		 enc_type = ["HIV Reception", "HIV first visit", "Height/Weight", 
 		             "HIV staging", "ART visit", "Update outcome", 
 		             "Give drugs", "Pre ART visit"]	             
+
 		enc_type.each do |enc_type|
 	 		encounters = Encounter.find(:all,
 			 :conditions => [" patient_id = ? and encounter_type = ?", patient.id, self.get_encounter(enc_type)])
@@ -38,6 +39,7 @@ def start
 		end
 		self.create_patient(patient)
 		self.create_guardian(patient)
+    puts "#{count-=1}................ Patient(s) to go"
 	end
 
 end
