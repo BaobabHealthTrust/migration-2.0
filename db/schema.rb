@@ -243,6 +243,11 @@ ActiveRecord::Schema.define(:version => 20130130144218) do
     t.integer "creator",                         :null => false
   end
 
+  create_table "visit_encounters", :force => true do |t|
+    t.date    "visit_date", :null => false
+    t.integer "patient_id", :null => false
+  end
+
   create_table "vitals_encounters", :force => true do |t|
     t.integer "visit_encounter_id",                    :null => false
     t.integer "patient_id",                            :null => false
