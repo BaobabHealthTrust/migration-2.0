@@ -43,8 +43,8 @@ def start
 		     self.create_record(visit_encounter_id, enc)
 	      end
     	end
-		#self.create_patient(patient)
-		#self.create_guardian(patient)
+		self.create_patient(patient)
+		self.create_guardian(patient)
     pt2 = Time.now
     elapsed = time_diff_milli t1, pt2
   	eps = total_enc / elapsed
