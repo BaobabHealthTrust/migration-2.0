@@ -10,6 +10,8 @@
 	Preart = EncounterType.find_by_name("Pre ART visit")
 	Concepts = Hash.new()
 	
+	CONN = ActiveRecord::Base.connection
+	
 	
 	
 	
@@ -22,12 +24,40 @@ def start
 	elapsed = time_diff_milli t1, t2
 	puts "Loaded concepts in #{elapsed}"
 	
+	
 	patients = Patient.find(:all, :limit => 10)
 	count = patients.length
 	puts "Number of patients to be migrated #{count}"
+	
+	
 	sleep 2 
 	total_enc = 0
 	t1 = Time.now
+	
+	use_queue = 1
+	patient_queue = Array.new
+	patient_queue_size = 50
+	guardian_queue = Array.new
+	guardian_queue_size = 50
+	hiv_reception_queue = Array.new
+	hiv_reception_size = 50
+	hiv_first_visit_queue = Array.new
+	hiv_first_visit_size = 50
+	height_weight_queue = Array.new
+	height_weight_size = 50
+	hiv_staging_queue = Array.new
+	hiv_stage_size = 50
+	art_visit_queue = Array.new
+	art_visit_size = 50
+	update_outcome_queue = Array.new
+	update_outcome_size = 50
+	give_drugs_queue = Array.new
+	give_drugs_size = 50
+	pre_art_visit_queue = Array.new
+	pre_art_visit_size = 50
+	
+	
+	
 	patients.each do |patient|
 		 enc_type = ["HIV Reception", "HIV first visit", "Height/Weight", 
 		             "HIV staging", "ART visit", "Update outcome", 
@@ -50,12 +80,39 @@ def start
   	eps = total_enc / elapsed
   	puts "#{total_enc} Encounters were processed in #{elapsed} for #{eps} eps"
 	end
+	
+	# flush the queues
+	flush_patient()
+	
+	
 	t2 = Time.now
 	elapsed = time_diff_milli t1, t2
 	eps = total_enc / elapsed
 	puts "Loaded concepts in #{elapsed}"
 	puts "#{total_enc} Encounters were processed in #{elapsed} for #{eps} eps"
+
+
 end
+
+def flush_patient() {
+  
+  # make an array of strings representing the inserted values
+  inserts = [];
+  patient_queue.each do |patient|
+    inserts.push( "(`#{patient.given_name}`,`#{patient.middle_name}`,`#{patient.family_name}`,`#{patient.gender}`,`#{patient.dob}`,`#{patient.dob_estimated}`,`#{patient.dead}`,`#{patient.traditional_authority}`,`#{patient.current_address}`,`#{patient.landmark}`,`#{patient.cellphone_number}`,`#{patient.home_phone_number}`,`#{patient.office_phone_number}`,`#{patient.occupation}`,`#{patient.nat_id}`,`#{patient.art_number}`,`#{patient.pre_art_number}`,`#{patient.tb_number}`,`#{patient.legacy_id}`,`#{patient.legacy_id2`,`#{patient.legacy_id3}`,`#{patient.new_nat_id}`,`#{patient.prev_art_number}`,`#{patient.filing_number}`,`#{patient.archived_filing_number}`,`#{patient.voided}`,`#{patient.void_reason}`,`#{patient.date_voided}`,`#{patient.voided_by}`,`#{patient.date_created}`,`#{patient.creator}`)"   )
+  end
+  
+  # prepare the bulk sql statement
+  sql = "INSERT INTO patients (`given_name`,`middle_name`,`family_name`,`gender`,`dob`,`dob_estimated`,`dead`,`traditional_authority`,`current_address`,`landmark`,`cellphone_number`,`home_phone_number`,`office_phone_number`,`occupation`,`nat_id`,`art_number`,`pre_art_number`,`tb_number`,`legacy_id`,`legacy_id2`,`legacy_id3`,`new_nat_id`,`prev_art_number`,`filing_number`,`archived_filing_number`,`voided`,`void_reason`,`date_voided`,`voided_by`,`date_created`,`creator`) VALUES #{inserts.join(", ")}"
+  
+  # execute
+  CONN.execute sql
+  
+  # clear the queue
+  patient_queue = []
+
+end
+
 
 def time_diff_milli(start, finish)
    (finish - start) * 1000.0
@@ -134,7 +191,15 @@ def self.create_patient(pat)
 	patient.date_created = pat.date_created.to_date
 	patient.creator = pat.creator
 
-	patient.save()
+  if use_queue > 0
+	  patient_queue << patient
+	  if patient_queue.length = patient_queue_size
+	    flush_patient()
+	  end
+	else
+	  patient.save()
+	end  
+
 end
 
 def self.create_guardian(pat)
@@ -150,7 +215,7 @@ def self.create_guardian(pat)
 			guardian.relationship = RelationshipType.find(ralative.relationship).name
 			guardian.creator = temp_relative.creator
 			guardian.save
-		end
+    end
 end
 
 def self.get_patient_identifiers(pat_id)
@@ -253,6 +318,9 @@ def self.create_hiv_first_visit(visit_encounter_id, encounter)
        when 'DATE LAST ARVS TAKEN'
           enc.date_last_arv_taken = ob.value_datetime
       end
+      
+      
+      
      enc.save
   end
 
