@@ -11,16 +11,23 @@
 	Concepts = Hash.new()
 	
 	
+	
+	
 def start
+  t1 = Time.now
 	Concept.find(:all).map do |con|
 			Concepts[con.id] = con
 	end
+	t2 = Time.now
+	elapsed = time_diff_milli t1, t2
+	puts "Loaded concepts in #{elapsed}"
 	
 	patients = Patient.find(:all, :limit => 10)
 	count = patients.length
 	puts "Number of patients to be migrated #{count}"
 	sleep 2 
 	total_enc = 0
+	t1 = Time.now
 	patients.each do |patient|
 		 enc_type = ["HIV Reception", "HIV first visit", "Height/Weight", 
 		             "HIV staging", "ART visit", "Update outcome", 
@@ -38,10 +45,22 @@ def start
 		self.create_patient(patient)
 		self.create_guardian(patient)
     puts "#{count-=1}................ Patient(s) to go"
-		
+    pt2 = Time.now
+    elapsed = time_diff_milli t1, pt2
+  	eps = total_enc / elapsed
+  	puts "#{total_enc} Encounters were processed in #{elapsed} for #{eps} eps"
 	end
-	puts "#{total_enc} Encounters were processed"
+	t2 = Time.now
+	elapsed = time_diff_milli t1, t2
+	eps = total_enc / elapsed
+	puts "Loaded concepts in #{elapsed}"
+	puts "#{total_enc} Encounters were processed in #{elapsed} for #{eps} eps"
 end
+
+def time_diff_milli(start, finish)
+   (finish - start) * 1000.0
+end
+
 
 def self.get_encounter(type)
  case type
