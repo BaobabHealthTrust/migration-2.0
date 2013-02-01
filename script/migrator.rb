@@ -11,6 +11,7 @@
 	Concepts = Hash.new()
 		
 def start
+	
 	puts "Started at : #{Time.now}"		
   t1 = Time.now
 	Concept.find(:all).map do |con|
@@ -20,34 +21,38 @@ def start
 	elapsed = time_diff_milli t1, t2
 	puts "Loaded concepts in #{elapsed}"
 	
-	patients = ActiveRecord::Base.connection.select_all('Select from * patient')
+	patients = ActiveRecord::Base.connection.select_all("Select * from Zomba_data.patient limit 10")
 	count = patients.length
 	puts "Number of patients to be migrated #{count}"
 	sleep 2 
 	total_enc = 0
+	pat_enc = 0
 	t1 = Time.now
 	patients.each do |patient|
 		enc_type = ["HIV Reception", "HIV first visit", "Height/Weight", 
 		             "HIV staging", "ART visit", "Update outcome", 
 		             "Give drugs", "Pre ART visit"]	             
 		enc_type.each do |enc_type|
-
-			encounters = ActiveRecord::Base.connection.select_values('Select * from encounter where patient_id = #{patient.id} and encounter_type = #{self.get_encounter(enc_type)}')
+		pat_id = patient["patient_id"]
+		encounters = Encounter.find_by_sql("Select * from Zomba_data.encounter where patient_id = #{pat_id} and encounter_type = #{self.get_encounter(enc_type)}")
 		 		
 			encounters.each do |enc|
 				total_enc +=1
-		     visit_encounter_id = self.check_for_visitdate(patient.id,enc.encounter_datetime.to_date)
+				pat_enc +=1
+		     visit_encounter_id = self.check_for_visitdate(pat_id,enc.encounter_datetime.to_date)
 		     self.create_record(visit_encounter_id, enc)
 	      end
     	end
-		self.create_patient(patient)
-		self.create_guardian(patient)
-    puts "#{count-=1}................ Patient(s) to go"
+		#self.create_patient(patient)
+		#self.create_guardian(patient)
     pt2 = Time.now
     elapsed = time_diff_milli t1, pt2
   	eps = total_enc / elapsed
-  	puts "#{total_enc} Encounters were processed in #{elapsed} for #{eps} eps"
+  	puts "#{pat_enc} Encounters were processed in #{elapsed} for #{eps} eps"
+    puts "#{count-=1}................ Patient(s) to go"
+   	pat_enc = 0
 	end
+
 	puts "Finished at : #{Time.now}"	
 	puts "#{total_enc} Encounters were processed"
 	t2 = Time.now
@@ -714,4 +719,5 @@ def self.get_concept(id)
 		return Concepts[id].name
 	end
 end
+
 start 
