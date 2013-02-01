@@ -11,24 +11,26 @@
 	Concepts = Hash.new()
 	
 	
-def start
-	Concept.find(:all).map do |con|
+	def start
+		Concept.find(:all).map do |con|
 			Concepts[con.id] = con
 	end
-	
-	patients = Patient.find(:all, :limit => 10)
+
+	puts "Started at : #{Time.now}"		
+	patients = ActiveRecord::Base.connection.select_all('Select from * patient')
 	count = patients.length
 	puts "Number of patients to be migrated #{count}"
 	sleep 2 
 	total_enc = 0
+
 	patients.each do |patient|
 		 enc_type = ["HIV Reception", "HIV first visit", "Height/Weight", 
 		             "HIV staging", "ART visit", "Update outcome", 
 		             "Give drugs", "Pre ART visit"]	             
 				enc_type.each do |enc_type|
 
-		 		encounters = Encounter.find(:all,
-				 :conditions => [" patient_id = ? and encounter_type = ?", patient.id, self.get_encounter(enc_type)])
+		 		encounters = ActiveRecord::Base.connection.select_values('Select * from encounter where patient_id = #{patient.id} and encounter_type = #{self.get_encounter(enc_type)}')
+		 		
 					encounters.each do |enc|
 					total_enc +=1
 		      visit_encounter_id = self.check_for_visitdate(patient.id,enc.encounter_datetime.to_date)
@@ -40,7 +42,9 @@ def start
     puts "#{count-=1}................ Patient(s) to go"
 		
 	end
+	puts "Finished at : #{Time.now}"	
 	puts "#{total_enc} Encounters were processed"
+	
 end
 
 def self.get_encounter(type)
@@ -206,11 +210,11 @@ def self.create_hiv_first_visit(visit_encounter_id, encounter)
   (encounter.observations || []).each do |ob|
      case ob.concept.name.upcase
        when 'AGREES TO FOLLOWUP'
-         enc.agrees_to_follow_up = Concept.find(ob.value_coded).name
+         enc.agrees_to_follow_up =  self.get_concept(ob.value_coded)
        when 'EVER RECEIVED ART'
-         enc.ever_received_arv = Concept.find(ob.value_coded).name
+         enc.ever_received_arv =  self.get_concept(ob.value_coded)
        when 'EVER REGISTERED AT ART CLINIC'
-         enc.ever_registered_at_art = Concept.find(ob.value_coded).name
+         enc.ever_registered_at_art =  self.get_concept(ob.value_coded)
        when 'LOCATION OF FIRST POSITIVE HIV TEST'
          enc.location_of_hiv_pos_test = Location.find(ob.value_numeric.to_i).name rescue 'Unknown'
        when 'DATE OF POSITIVE HIV TEST'
@@ -220,13 +224,13 @@ def self.create_hiv_first_visit(visit_encounter_id, encounter)
        when 'LOCATION OF ART INITIATION'
           enc.location_of_art_initiation = Location.find(ob.value_numeric.to_i).name rescue 'Unknown'
        when 'TAKEN ARVS IN LAST 2 MONTHS'
-          enc.taken_arvs_in_last_two_months = Concept.find(ob.value_coded).name
+          enc.taken_arvs_in_last_two_months =  self.get_concept(ob.value_coded)
        when 'LAST ARV DRUGS TAKEN'
-          enc.last_arv_regimen = Concept.find(ob.value_coded).name
+          enc.last_arv_regimen =  self.get_concept(ob.value_coded)
        when 'TAKEN ART IN LAST 2 WEEKS'
-          enc.taken_arvs_in_last_two_weeks = Concept.find(ob.value_coded).name
+          enc.taken_arvs_in_last_two_weeks =  self.get_concept(ob.value_coded)
        when 'HAS TRANSFER LETTER'
-          enc.has_transfer_letter = Concept.find(ob.value_coded).name
+          enc.has_transfer_letter =  self.get_concept(ob.value_coded)
        when 'SITE TRANSFERRED FROM'
   	      enc.site_transferred_from = Location.find(ob.value_numeric.to_i).name rescue 'Unknown'
        when 'DATE OF ART INITIATION'
@@ -273,8 +277,8 @@ def self.assign_drugs_dispensed(encounter,drug_order,count)
       encounter.drug_name4 = drug_order.drug.name
     when 5
       encounter.dispensed_quantity5 = drug_order.quantity
-      encounter.drug_name5 = drug_order.drug.name
   end
+      encounter.drug_name5 = drug_order.drug.name
 end
 
 def self.create_update_outcome(visit_encounter_id, encounter)
@@ -287,7 +291,7 @@ def self.create_update_outcome(visit_encounter_id, encounter)
 	    (encounter.observations || []).each do |ob|
 			  case ob.concept.name.upcase
 			  when 'OUTCOME'
-					enc.state = Concept.find(ob.value_coded).name
+					enc.state = self.get_concept(ob.value_coded)
 					enc.outcome_date = ob.obs_datetime
 					if enc.state =='Transfer Out(With Transfer Note)'
 						#enc.transferred_out_location
@@ -330,9 +334,9 @@ def	self.create_hiv_reception_record(visit_encounter_id, encounter)
 	(encounter.observations || []).each do |ob|
 		case ob.concept.name.upcase
  		   when 'GUARDIAN PRESENT'
- 		     enc.guardian_present = Concept.find(ob.value_coded).name
+ 		     enc.guardian_present = self.get_concept(ob.value_coded)
 		   when 'PATIENT PRESENT' 
-		     enc.patient_present = Concept.find(ob.value_coded).name
+		     enc.patient_present = self.get_concept(ob.value_coded)
     end
 		
 	end
@@ -346,7 +350,7 @@ def self.create_pre_art_record(visit_encounter_id, encounter)
 	enc.date_created = encounter.date_created
 	enc.creator = encounter.creator
 	(encounter.observations || []).each do |ob|
-  	self.repeated_obs(enc, ob)
+  	self.repeated_obs(enc, ob) rescue nil
 	end
 	drug_induced_symptom (enc) rescue nil
   enc.save
@@ -383,30 +387,30 @@ end
 def self.assign_drugs_counted(encounter,obs,count)
   case count
     when 1
-      encounter.drug_name_brought_to_clinic1 = Drug.find(obs.value_drug).name 
-      encounter.drug_quantity_brought_to_clinic1 = obs.value_numeric
+      encounter.drug_name_brought_to_clinic1 = Drug.find(obs.value_drug).name rescue nil
+      encounter.drug_quantity_brought_to_clinic1 = obs.value_numeric rescue nil
     when 2
-      encounter.drug_name_brought_to_clinic2 = Drug.find(obs.value_drug).name 
-      encounter.drug_quantity_brought_to_clinic2 = obs.value_numeric
+      encounter.drug_name_brought_to_clinic2 = Drug.find(obs.value_drug).name rescue nil
+      encounter.drug_quantity_brought_to_clinic2 = obs.value_numeric rescue nil
     when 3
-      encounter.drug_name_brought_to_clinic3 = Drug.find(obs.value_drug).name 
-      encounter.drug_quantity_brought_to_clinic3 = obs.value_numeric
+      encounter.drug_name_brought_to_clinic3 = Drug.find(obs.value_drug).name rescue nil
+      encounter.drug_quantity_brought_to_clinic3 = obs.value_numeric rescue nil
     when 4
-      encounter.drug_name_brought_to_clinic4 = Drug.find(obs.value_drug).name 
-      encounter.drug_quantity_brought_to_clinic4 = obs.value_numeric
+      encounter.drug_name_brought_to_clinic4 = Drug.find(obs.value_drug).name rescue nil
+      encounter.drug_quantity_brought_to_clinic4 = obs.value_numeric rescue nil
   end
 end
 
 def self.assign_drugs_counted_but_not_brought(encounter,obs,count)
   case count
     when 1
-      encounter.drug_left_at_home1 = obs.value_numeric
+      encounter.drug_left_at_home1 = obs.value_numeric rescue nil
     when 2
-      encounter.drug_left_at_home2 = obs.value_numeric
+      encounter.drug_left_at_home2 = obs.value_numeric rescue nil
     when 3
-      encounter.drug_left_at_home3 = obs.value_numeric
+      encounter.drug_left_at_home3 = obs.value_numeric rescue nil
     when 4
-      encounter.drug_left_at_home4 = obs.value_numeric
+      encounter.drug_left_at_home4 = obs.value_numeric rescue nil
   end
 end
 
