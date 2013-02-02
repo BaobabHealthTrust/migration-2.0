@@ -12,6 +12,30 @@
 	
   Bart_database = YAML.load(File.open(File.join(RAILS_ROOT, "config/database.yml"), "r"))['bart']["database"]	
 
+	Use_queue = 1
+	Patient_queue = Array.new
+	Patient_queue_size = 50
+	Guardian_queue = Array.new
+	Guardian_queue_size = 50
+	Hiv_reception_queue = Array.new
+	Hiv_reception_size = 50
+	Hiv_first_visit_queue = Array.new
+	Hiv_first_visit_size = 50
+	Height_weight_queue = Array.new
+	Height_weight_size = 50
+	Hiv_staging_queue = Array.new
+	Hiv_stage_size = 50
+	Art_visit_queue = Array.new
+	Art_visit_size = 50
+	Update_outcome_queue = Array.new
+	Update_outcome_size = 50
+	Give_drugs_queue = Array.new
+	Give_drugs_size = 50
+	Pre_art_visit_queue = Array.new
+	Pre_art_visit_size = 50
+	
+	CONN = ActiveRecord::Base.connection
+
 def start
 	
 	puts "Started at : #{Time.now}"		
@@ -23,17 +47,24 @@ def start
 	elapsed = time_diff_milli t1, t2
 	puts "Loaded concepts in #{elapsed}"
 	
-	patients = ActiveRecord::Base.connection.select_all("Select * from #{Bart_database}.patient limit 10")
+	patients = ActiveRecord::Base.connection.select_all("Select * from #{Bart_database}.patient limit 40")
 	count = patients.length
 	puts "Number of patients to be migrated #{count}"
+	
+	
 	sleep 2 
 	total_enc = 0
 	pat_enc = 0
 	t1 = Time.now
+	
+	
+	
+	
 	patients.each do |patient|
 		enc_type = ["HIV Reception", "HIV first visit", "Height/Weight", 
 		             "HIV staging", "ART visit", "Update outcome", 
 		             "Give drugs", "Pre ART visit"]	             
+		enc_type = []             
 		enc_type.each do |enc_type|
 		pat_id = patient["patient_id"]
 		encounters = Encounter.find_by_sql("Select * from #{Bart_database}.encounter where patient_id = #{pat_id} and encounter_type = #{self.get_encounter(enc_type)}")
@@ -54,6 +85,10 @@ def start
     puts "#{count-=1}................ Patient(s) to go"
    	pat_enc = 0
 	end
+	
+	# flush the queues
+	flush_patient()
+#	flush_hiv_reception()	
 
 	puts "Finished at : #{Time.now}"	
 	puts "#{total_enc} Encounters were processed"
@@ -64,6 +99,7 @@ def start
 	puts "#{total_enc} Encounters were processed in #{elapsed} for #{eps} eps"
 
 end
+
 
 def time_diff_milli(start, finish)
    (finish - start) * 1000.0
@@ -142,7 +178,15 @@ def self.create_patient(pat)
 	patient.date_created = pat.date_created.to_date
 	patient.creator = pat.creator
 
-	patient.save()
+  if Use_queue > 0
+	  Patient_queue << patient
+	  if Patient_queue[49] != nil
+	    flush_patient()
+	  end
+	else
+	  patient.save()
+	end  
+
 end
 
 def self.create_guardian(pat)
@@ -158,7 +202,7 @@ def self.create_guardian(pat)
 			guardian.relationship = RelationshipType.find(ralative.relationship).name
 			guardian.creator = temp_relative.creator
 			guardian.save
-		end
+    end
 end
 
 def self.get_patient_identifiers(pat_id)
@@ -261,7 +305,9 @@ def self.create_hiv_first_visit(visit_encounter_id, encounter)
        when 'DATE LAST ARVS TAKEN'
           enc.date_last_arv_taken = ob.value_datetime
       end
-     enc.save
+      
+		enc.save      
+
   end
 
 end
@@ -363,7 +409,15 @@ def	self.create_hiv_reception_record(visit_encounter_id, encounter)
     end
 		
 	end
-  enc.save
+  if Use_queue > 0
+	  Hiv_reception_queue << enc
+	  if Hiv_reception_queue[49] != nil
+	    #flush_hiv_reception()
+	  end
+	else
+	  enc.save()
+	end  
+
 end
 
 def self.create_pre_art_record(visit_encounter_id, encounter)
@@ -722,4 +776,86 @@ def self.get_concept(id)
 	end
 end
 
+def flush_patient() 
+  
+  # make an array of strings representing the inserted values
+  inserts = [];
+  Patient_queue.each do |patient|
+		
+		given_name = (!patient.given_name.blank? ? "#{patient.given_name}" : nil )
+		middle_name = (!patient.middle_name.nil? ? "#{patient.middle_name}" : nil )
+		family_name = (!patient.family_name.blank? ? "#{patient.family_name}" : nil)
+		gender = (!patient.gender.blank? ? "#{patient.gender}" : nil)
+		dob = (!patient.dob.nil? ? "#{patient.dob}" : "0000-00-00")
+		dead = (!patient.dead.blank? ? "#{patient.dead}" : 0)
+		dob_estimated = (!patient.dob_estimated.blank? ? "#{patient.dob_estimated}" : nil)
+		traditional_authority = (!patient.traditional_authority.blank? ? "#{patient.traditional_authority}" : nil)
+		current_address = (!patient.current_address.blank? ? "#{patient.current_address}" : nil)
+		landmark = (!patient.landmark.blank? ? "#{patient.landmark}" : nil)
+		cellphone_number = (!patient.cellphone_number.blank? ? "#{patient.cellphone_number}" : nil)
+		home_phone_number = (!patient.home_phone_number.blank? ? "#{patient.home_phone_number}" : nil)
+		office_phone_number = (!patient.office_phone_number.blank? ? "#{patient.office_phone_number}" : nil)
+		occupation = (!patient.occupation.blank? ? "#{patient.occupation}" : nil)
+		nat_id = (!patient.nat_id.blank? ? "#{patient.nat_id}" : nil)
+		art_number  = (!patient.art_number.blank? ? "#{patient.art_number}" : nil)
+		pre_art_number = (!patient.pre_art_number.blank? ? "#{patient.pre_art_number}" : nil )
+		tb_number = (!patient.tb_number.blank? ? "#{patient.tb_number}" : nil)
+		legacy_id = (!patient.legacy_id.blank? ? "#{patient.legacy_id}" : nil)
+		legacy_id2 = (!patient.legacy_id2.blank? ? "#{patient.legacy_id2}" : nil)
+		legacy_id3 = (!patient.legacy_id3.blank? ? "#{patient.legacy_id3}" : nil)
+		new_nat_id = (!patient.new_nat_id.blank? ? "#{patient.new_nat_id}" : nil)
+		prev_art_number = (!patient.prev_art_number.blank? ? "#{patient.prev_art_number}" : nil)
+		filing_number = (!patient.filing_number.blank? ? "#{patient.filing_number}" : nil )
+		archived_filing_number = (!patient.archived_filing_number.blank? ? "#{patient.archived_filing_number}" : nil)
+		voided = (!patient.voided.blank? ? "#{patient.voided}" : 0)
+		void_reason = (!patient.void_reason.blank? ? "#{patient.void_reason}" : nil)
+		date_voided = (!patient.date_voided.blank? ? "#{patient.date_voided}" : 0000-00-00 )
+		voided_by = (!patient.voided_by.blank? ? "#{patient.voided_by}" : 0)
+		date_created = (!patient.date_created.blank? ? "#{patient.date_created}" : nil)
+		creator = (!patient.creator.blank? ? "#{patient.creator}" : 1)
+
+=begin
+    inserts.push( '(' +'"' + given_name + '","' + middle_name + '","' +family_name + '","' +gender + '","' +dob + '","' +dob_estimated + '","' +dead + '","' +traditional_authority + '","' +current_address + '","' +landmark + '","' +cellphone_number + '","' + home_phone_number + '","' +office_phone_number + '","' +occupation + '","' +nat_id + '","' + art_number + '","' +pre_art_number + '","' +tb_number + '","' +legacy_id + '","' + legacy_id2 + '","' +legacy_id3 + '","' +new_nat_id + '","' +prev_art_number + '","' + filing_number + '","' +archived_filing_number + '","' +voided + '","' +void_reason + '","' + date_voided + '","' + voided_by + '","' + date_created + '",' + creator +'")' ) 
+
+
+  # prepare the bulk sql statement
+  sql = "INSERT INTO patients (given_name,middle_name,family_name,gender,dob,dob_estimated,dead,traditional_authority,current_address,landmark,cellphone_number,home_phone_number,office_phone_number,occupation,nat_id,art_number,pre_art_number,tb_number,legacy_id,legacy_id2,legacy_id3,new_nat_id,prev_art_number,filing_number,archived_filing_number,voided,void_reason,date_voided,voided_by,date_created,creator)VALUES#{inserts.join(", ")}"
+
+=end
+#puts "#{void_reason} xxxxxxxxx"
+	#inserts.push('(' +'"' + given_name +'","' + middle_name +'","' + family_name + '","' + gender + '",' + voided.to_s + ',"' ###+ #void_reason + '", ' + dob.to_s + ',' + date_created.to_s + ','+ creator.to_s + ')' )    
+#	inserts.push("('#{given_name}','#{middle_name}','#{family_name}','#{gender}',#{voided},'#{void_reason}','#{dob}','##{date_created}',#{creator})")    
+  
+ inserts.push("('#{given_name}','#{middle_name}','#{family_name}','#{gender}','#{dob}','#{dob_estimated}',#{dead},'#{traditional_authority}','#{current_address}','#{landmark}','#{cellphone_number}','#{home_phone_number}','#{office_phone_number}','#{occupation}','#{nat_id}','#{art_number}',#{pre_art_number},'#{tb_number}','#{legacy_id}','#{legacy_id2}','#{legacy_id3}','#{new_nat_id}','#{prev_art_number}','#{filing_number}','#{archived_filing_number}',#{voided},'#{void_reason}','#{date_voided}','#{voided_by}','#{date_created}',#{creator})" ) 
+
+ end
+ 
+ 
+ 
+sql = "INSERT INTO patients(given_name,middle_name,family_name,gender,dob,dob_estimated,dead,traditional_authority,current_address,landmark,cellphone_number,home_phone_number,office_phone_number,occupation,nat_id,art_number,pre_art_number,tb_number,legacy_id,legacy_id2,legacy_id3,new_nat_id,prev_art_number,filing_number,archived_filing_number,voided,void_reason,date_voided,voided_by,date_created,creator)VALUES#{inserts.join(", ")}"
+
+ 
+  
+  # execute
+  CONN.execute sql
+#  Patient_queue = []
+
+end
+
+def flush_hiv_reception()
+
+  inserts = [];
+  Hiv_reception_queue.each do |enc|
+    inserts.push("`#{enc.visit_encounter_id}`,`#{enc.patient_id}`,`#{enc.patient_present}`,`#{enc.guardian_present}`,`#{enc.date_created}`,`#{enc.creator}`")
+  end
+  
+  # prepare the bulk sql statement
+ sql = "INSERT INTO hiv_reception_encounters (`visit_encounter_id`,`patient_id`,`patient_present`,`guardian_present`,`date_created`,`creator`) VALUES #{inserts.join(", ")};"
+  
+ # execute
+ CONN.execute sql
+  
+ # clear the queue
+ #Hiv_reception_queue = []
+end
 start 

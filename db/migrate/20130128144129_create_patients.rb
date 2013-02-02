@@ -7,7 +7,7 @@ EOF
 
 ActiveRecord::Base.connection.execute <<EOF
 	create table `patients`(
-`patient_id` int not null primary key,
+	`patient_id` int auto_increment not null primary key,
 	`given_name` varchar(255) ,
 	`middle_name` varchar(255),
 	`family_name` varchar(255),
@@ -38,7 +38,7 @@ ActiveRecord::Base.connection.execute <<EOF
 	`date_voided` date ,
 	`voided_by` int,
 	`date_created` date not null,
-	`creator` int not null
+	`creator` int not null default 1
 
 	);
 
