@@ -31,6 +31,7 @@
 	Give_drugs_size = 500
 	Pre_art_visit_queue = Array.new
 	Pre_art_visit_size = 50
+	Users_queue = Array.new
   Source_db= YAML.load(File.open(File.join(RAILS_ROOT, "config/database.yml"), "r"))['bart']["database"]	
 
 
@@ -87,6 +88,9 @@
       pat_enc = 0
     end
 	
+	#Create system users
+	self.create_users()
+	
 	# flush the queues
 	flush_patient()
 	flush_hiv_first_visit	()
@@ -98,7 +102,7 @@
   flush_art_visit()
   flush_hiv_staging()
   flush_update_outcome()
-
+	flush_users()
     puts "Finished at : #{Time.now}"
     puts "#{total_enc} Encounters were processed"
     t2 = Time.now
@@ -915,7 +919,9 @@ def flush_update_outcome()
 
 end
 
-
+def flush_users()
+	flush_queue(Users_queue,'users', ['username','first_name','middle_name','last_name','password','salt','date_created','voided','void_reason','date_voided','voided_by','creator'])
+end
 def flush_queue(queue, table, columns)
     if queue.length == 0
       return
@@ -943,5 +949,25 @@ def flush_queue(queue, table, columns)
     queue.clear()
 end
 
+def self.create_users()
+	users = User.find_by_sql("Select* from  #{Source_db}.users")
+		
+		users.each do |user|
+			new_user = MigratedUsers.new()
+			new_user.username = user.username
+			new_user.first_name = user.first_name
+			new_user.middle_name = user.middle_name
+			new_user.last_name = user.last_name
+			new_user.password = user.password
+			new_user.salt = user.salt
+			new_user.date_created = user.date_created
+			new_user.voided = user.voided
+			new_user.void_reason = user.void_reason
+			new_user.date_voided = user.date_voided
+			new_user.voided_by = user.voided_by
+			new_user.creator = user.creator
+			Users_queue << new_user
+		end
+end
 start 
 
