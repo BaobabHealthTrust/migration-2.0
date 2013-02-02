@@ -64,7 +64,7 @@
 #                  "HIV staging", "ART visit", "Update outcome",
 #                  "Give drugs", "Pre ART visit"]
 #    enc_type = []
-      enc_type = ["HIV first visit", "Give drugs", "ART visit", "HIV staging", "Update outcome", ]
+      enc_type = ["HIV first visit", "Give drugs", "ART visit", "HIV staging", "Update outcome"]
 
       enc_type.each do |enc_type|
         pat_id = patient["patient_id"]
@@ -214,7 +214,7 @@ end
 
 def self.create_guardian(pat)
 		relatives = Relationship.find(:all, :conditions => ["person_id = ?", pat.id])
-		relatives.each do |relative|
+		(relatives || []).each do |relative|
 			guardian = Guardian.new()
 			temp_relative = Patient.find(:last, :conditions => ["patient_id = ? ", relative.relative_id])
 			temp = PatientName.find(:last, :conditions => ["patient_id = ? and voided = 0", relative.relative_id])
@@ -222,8 +222,9 @@ def self.create_guardian(pat)
 			guardian.family_name = temp.family_name  rescue nil
 			guardian.name = temp.given_name rescue nil
 			guardian.gender = temp_relative.gender rescue nil
-			guardian.relationship = RelationshipType.find(ralative.relationship).name
+			guardian.relationship = RelationshipType.find(relative.relationship).name
 			guardian.creator = temp_relative.creator
+      guardian.date_created = Time.now()
 			guardian.save
     end
 end
