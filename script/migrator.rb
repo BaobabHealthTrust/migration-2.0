@@ -12,24 +12,24 @@
 	Use_queue = 1
 	Patient_queue = Array.new
 	Patient_queue_size = 50
-	guardian_queue = Array.new
-	guardian_queue_size = 50
+	Guardian_queue = Array.new
+	Guardian_queue_size = 50
 	Hiv_reception_queue = Array.new
-	hiv_reception_size = 50
-	hiv_first_visit_queue = Array.new
-	hiv_first_visit_size = 50
-	height_weight_queue = Array.new
-	height_weight_size = 50
-	hiv_staging_queue = Array.new
-	hiv_stage_size = 50
-	art_visit_queue = Array.new
-	art_visit_size = 50
-	update_outcome_queue = Array.new
-	update_outcome_size = 50
-	give_drugs_queue = Array.new
-	give_drugs_size = 50
-	pre_art_visit_queue = Array.new
-	pre_art_visit_size = 50
+	Hiv_reception_size = 50
+	Hiv_first_visit_queue = Array.new
+	Hiv_first_visit_size = 50
+	Height_weight_queue = Array.new
+	Height_weight_size = 50
+	Hiv_staging_queue = Array.new
+	Hiv_stage_size = 50
+	Art_visit_queue = Array.new
+	Art_visit_size = 50
+	Update_outcome_queue = Array.new
+	Update_outcome_size = 50
+	Give_drugs_queue = Array.new
+	Give_drugs_size = 50
+	Pre_art_visit_queue = Array.new
+	Pre_art_visit_size = 50
 	
 	CONN = ActiveRecord::Base.connection
 
@@ -44,7 +44,7 @@ def start
 	elapsed = time_diff_milli t1, t2
 	puts "Loaded concepts in #{elapsed}"
 	
-	patients = Patient.find_by_sql("Select * from Zomba_data.patient limit 1")
+	patients = Patient.find_by_sql("Select * from Zomba_data.patient limit 40")
 	count = patients.length
 	puts "Number of patients to be migrated #{count}"
 	
@@ -61,6 +61,7 @@ def start
 		enc_type = ["HIV Reception", "HIV first visit", "Height/Weight", 
 		             "HIV staging", "ART visit", "Update outcome", 
 		             "Give drugs", "Pre ART visit"]	             
+		enc_type = []             
 		enc_type.each do |enc_type|
 		pat_id = patient["patient_id"]
 		encounters = Encounter.find_by_sql("Select * from Zomba_data.encounter where patient_id = #{pat_id} and encounter_type = #{self.get_encounter(enc_type)}")
@@ -778,37 +779,37 @@ def flush_patient()
   inserts = [];
   Patient_queue.each do |patient|
 		
-		given_name = patient.given_name rescue "NULL" 
-		middle_name = (!patient.middle_name.nil? ? patient.middle_name : "0000-00-00")
-		family_name = patient.family_name rescue "NULL"
-		gender = patient.gender rescue "NULL"
-		dob = (!patient.dob.nil? ? patient.dob : "0000-00-00")
-		dead = patient.dead rescue 0
-		dob_estimated = patient.dob_estimated rescue "NULL"
-		traditional_authority = patient.traditional_authority rescue "NULL"
-		current_address = patient.current_address rescue "NULL"
-		landmark = patient.landmark rescue "NULL"
-		cellphone_number = patient.cellphone_number rescue "NULL"
-		home_phone_number = patient.home_phone_number rescue "NULL"
-		office_phone_number = patient.office_phone_number rescue "NULL" 
-		occupation = patient.occupation  rescue "NULL"
-		nat_id = patient.nat_id  rescue "NULL"
-		art_number  = patient.art_number rescue "NULL"
-		pre_art_number = patient.pre_art_number rescue "NULL" 
-		tb_number = patient.tb_number rescue "NULL"
-		legacy_id = patient.legacy_id rescue "NULL"
-		legacy_id2 = patient.legacy_id2 rescue "NULL"
-		legacy_id3 = patient.legacy_id3 rescue "NULL"
-		new_nat_id = patient.new_nat_id rescue "NULL"
-		prev_art_number = patient.prev_art_number.blank? ? "'#{patient.prev_art_number}'" : nil
-		filing_number = patient.filing_number rescue "NULL"
-		archived_filing_number = patient.archived_filing_number rescue ""
-		voided = patient.voided rescue 0
-		void_reason = (!patient.void_reason.blank? ? patient.void_reason : "")
-		date_voided = patient.date_voided rescue "0000-00-00" 
-		voided_by = patient.voided_by rescue 1
-		date_created = patient.date_created 
-		creator = patient.creator rescue 1
+		given_name = (!patient.given_name.blank? ? "#{patient.given_name}" : nil )
+		middle_name = (!patient.middle_name.nil? ? "#{patient.middle_name}" : nil )
+		family_name = (!patient.family_name.blank? ? "#{patient.family_name}" : nil)
+		gender = (!patient.gender.blank? ? "#{patient.gender}" : nil)
+		dob = (!patient.dob.nil? ? "#{patient.dob}" : "0000-00-00")
+		dead = (!patient.dead.blank? ? "#{patient.dead}" : 0)
+		dob_estimated = (!patient.dob_estimated.blank? ? "#{patient.dob_estimated}" : nil)
+		traditional_authority = (!patient.traditional_authority.blank? ? "#{patient.traditional_authority}" : nil)
+		current_address = (!patient.current_address.blank? ? "#{patient.current_address}" : nil)
+		landmark = (!patient.landmark.blank? ? "#{patient.landmark}" : nil)
+		cellphone_number = (!patient.cellphone_number.blank? ? "#{patient.cellphone_number}" : nil)
+		home_phone_number = (!patient.home_phone_number.blank? ? "#{patient.home_phone_number}" : nil)
+		office_phone_number = (!patient.office_phone_number.blank? ? "#{patient.office_phone_number}" : nil)
+		occupation = (!patient.occupation.blank? ? "#{patient.occupation}" : nil)
+		nat_id = (!patient.nat_id.blank? ? "#{patient.nat_id}" : nil)
+		art_number  = (!patient.art_number.blank? ? "#{patient.art_number}" : nil)
+		pre_art_number = (!patient.pre_art_number.blank? ? "#{patient.pre_art_number}" : nil )
+		tb_number = (!patient.tb_number.blank? ? "#{patient.tb_number}" : nil)
+		legacy_id = (!patient.legacy_id.blank? ? "#{patient.legacy_id}" : nil)
+		legacy_id2 = (!patient.legacy_id2.blank? ? "#{patient.legacy_id2}" : nil)
+		legacy_id3 = (!patient.legacy_id3.blank? ? "#{patient.legacy_id3}" : nil)
+		new_nat_id = (!patient.new_nat_id.blank? ? "#{patient.new_nat_id}" : nil)
+		prev_art_number = (!patient.prev_art_number.blank? ? "#{patient.prev_art_number}" : nil)
+		filing_number = (!patient.filing_number.blank? ? "#{patient.filing_number}" : nil )
+		archived_filing_number = (!patient.archived_filing_number.blank? ? "#{patient.archived_filing_number}" : nil)
+		voided = (!patient.voided.blank? ? "#{patient.voided}" : 0)
+		void_reason = (!patient.void_reason.blank? ? "#{patient.void_reason}" : nil)
+		date_voided = (!patient.date_voided.blank? ? "#{patient.date_voided}" : 0000-00-00 )
+		voided_by = (!patient.voided_by.blank? ? "#{patient.voided_by}" : 0)
+		date_created = (!patient.date_created.blank? ? "#{patient.date_created}" : nil)
+		creator = (!patient.creator.blank? ? "#{patient.creator}" : 1)
 
 =begin
     inserts.push( '(' +'"' + given_name + '","' + middle_name + '","' +family_name + '","' +gender + '","' +dob + '","' +dob_estimated + '","' +dead + '","' +traditional_authority + '","' +current_address + '","' +landmark + '","' +cellphone_number + '","' + home_phone_number + '","' +office_phone_number + '","' +occupation + '","' +nat_id + '","' + art_number + '","' +pre_art_number + '","' +tb_number + '","' +legacy_id + '","' + legacy_id2 + '","' +legacy_id3 + '","' +new_nat_id + '","' +prev_art_number + '","' + filing_number + '","' +archived_filing_number + '","' +voided + '","' +void_reason + '","' + date_voided + '","' + voided_by + '","' + date_created + '",' + creator +'")' ) 
