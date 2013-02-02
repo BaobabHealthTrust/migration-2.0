@@ -47,7 +47,7 @@ def start
 	elapsed = time_diff_milli t1, t2
 	puts "Loaded concepts in #{elapsed}"
 	
-	patients = ActiveRecord::Base.connection.select_all("Select * from #{Bart_database}.patient limit 40")
+	patients = Patient.find_by_sql("Select * from #{Bart_database}.patient limit 40")
 	count = patients.length
 	puts "Number of patients to be migrated #{count}"
 	
