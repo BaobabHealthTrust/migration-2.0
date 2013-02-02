@@ -228,7 +228,7 @@ def self.create_guardian(pat)
 			guardian.name = temp.given_name rescue nil
 			guardian.gender = temp_relative.gender rescue nil
 			guardian.relationship = RelationshipType.find(relative.relationship).name
-			guardian.creator = temp_relative.creator
+			guardian.creator = temp_relative.creator rescue 1
       guardian.date_created = relative.date_created
 			Guardian_queue << guardian
     end
@@ -603,8 +603,11 @@ def	self.create_hiv_staging_encounter(visit_encounter_id, encounter)
   enc.visit_encounter_id = visit_encounter_id
   enc.date_created = encounter.date_created
   enc.creator = encounter.creator
-  enc.who_stage = PersonAttribute.find(:last, :conditions => ["person_id = ? and person_attribute_type_id = ?",encounter.patient_id, whostage]).value 
-  enc.reason_for_starting_art = PersonAttribute.find(:last, :conditions => ["person_id = ? and person_attribute_type_id = ?",encounter.patient_id, startreason]).value 
+  enc.who_stage = PersonAttribute.find(:last, :conditions => ["person_id = ? 
+    AND person_attribute_type_id = ?",encounter.patient_id, whostage]).value rescue nil
+  enc.reason_for_starting_art = PersonAttribute.find(:last, 
+    :conditions => ["person_id = ? AND person_attribute_type_id = ?",
+    encounter.patient_id, startreason]).value rescue nil 
   (encounter.observations || []).each do |ob|
   		self.repeated_obs(enc, ob)
   end
