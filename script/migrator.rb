@@ -11,7 +11,7 @@
 	Concepts = Hash.new()
 	Use_queue = 1
 	Patient_queue = Array.new
-	Patient_queue_size = 50
+	Patient_queue_size = 2
 	Guardian_queue = Array.new
 	Guardian_queue_size = 50
 	Hiv_reception_queue = Array.new
@@ -27,79 +27,85 @@
 	Update_outcome_queue = Array.new
 	Update_outcome_size = 50
 	Give_drugs_queue = Array.new
-	Give_drugs_size = 50
+	Give_drugs_size = 500
 	Pre_art_visit_queue = Array.new
 	Pre_art_visit_size = 50
+  Source_db = "openmrs_zomba"
 	
 	CONN = ActiveRecord::Base.connection
 
-def start
-	
-	puts "Started at : #{Time.now}"		
-  t1 = Time.now
-	Concept.find(:all).map do |con|
-			Concepts[con.id] = con
-	end
-	t2 = Time.now
-	elapsed = time_diff_milli t1, t2
-	puts "Loaded concepts in #{elapsed}"
-	
-	patients = Patient.find_by_sql("Select * from Zomba_data.patient limit 40")
-	count = patients.length
-	puts "Number of patients to be migrated #{count}"
-	
-	
-	sleep 2 
-	total_enc = 0
-	pat_enc = 0
-	t1 = Time.now
-	
-	
-	
-	
-	patients.each do |patient|
-		enc_type = ["HIV Reception", "HIV first visit", "Height/Weight", 
-		             "HIV staging", "ART visit", "Update outcome", 
-		             "Give drugs", "Pre ART visit"]	             
-		enc_type = []             
-		enc_type.each do |enc_type|
-		pat_id = patient["patient_id"]
-		encounters = Encounter.find_by_sql("Select * from Zomba_data.encounter where patient_id = #{pat_id} and encounter_type = #{self.get_encounter(enc_type)}")
-		 		
-			encounters.each do |enc|
-				total_enc +=1
-				pat_enc +=1
-		     visit_encounter_id = self.check_for_visitdate(pat_id,enc.encounter_datetime.to_date)
-		     self.create_record(visit_encounter_id, enc)
-	      end
-    	end
-		self.create_patient(patient)
-		self.create_guardian(patient)
-    pt2 = Time.now
-    elapsed = time_diff_milli t1, pt2
-  	eps = total_enc / elapsed
-  	puts "#{pat_enc} Encounters were processed in #{elapsed} for #{eps} eps"
-    puts "#{count-=1}................ Patient(s) to go"
-   	pat_enc = 0
-	end
-	
-	# flush the queues
-	flush_patient()
-#	flush_hiv_reception()	
+  def start
 
-	puts "Finished at : #{Time.now}"	
-	puts "#{total_enc} Encounters were processed"
-	t2 = Time.now
-	elapsed = time_diff_milli t1, t2
-	eps = total_enc / elapsed
-	puts "Loaded concepts in #{elapsed}"
-	puts "#{total_enc} Encounters were processed in #{elapsed} for #{eps} eps"
+    puts "Started at : #{Time.now}"
+    t1 = Time.now
+    Concept.find(:all).map do |con|
+      Concepts[con.id] = con
+    end
+    t2 = Time.now
+    elapsed = time_diff_milli t1, t2
+    puts "Loaded concepts in #{elapsed}"
+
+    patients = Patient.find_by_sql("Select * from #{Source_db}.patient limit 100")
+    count = patients.length
+    puts "Number of patients to be migrated #{count}"
+
+
+    #sleep 2
+    total_enc = 0
+    pat_enc = 0
+    t1 = Time.now
+
+
+    patients.each do |patient|
+      pt1 = Time.now
+#      enc_type = ["HIV Reception", "HIV first visit", "Height/Weight",
+#                  "HIV staging", "ART visit", "Update outcome",
+#                  "Give drugs", "Pre ART visit"]
+#    enc_type = []
+      enc_type = ["HIV first visit", "Give drugs", "ART visit", "HIV staging", "Update outcome", ]
+
+      enc_type.each do |enc_type|
+        pat_id = patient["patient_id"]
+        encounters = Encounter.find_by_sql("Select * from #{Source_db}.encounter where patient_id = #{pat_id} and encounter_type = #{self.get_encounter(enc_type)}")
+        puts("#{encounters.length} encounters of type #{enc_type} found")
+        encounters.each do |enc|
+          total_enc +=1
+          pat_enc +=1
+          visit_encounter_id = self.check_for_visitdate(pat_id, enc.encounter_datetime.to_date)
+          self.create_record(visit_encounter_id, enc)
+        end
+      end
+      self.create_patient(patient)
+      self.create_guardian(patient)
+      pt2 = Time.now
+      elapsed = time_diff_milli pt1, pt2
+      eps = total_enc / elapsed
+      puts "#{pat_enc} Encounters were processed in #{elapsed} for #{eps} eps"
+      puts "#{count-=1}................ Patient(s) to go"
+      pat_enc = 0
+    end
+	
+    # flush the queues
+    flush_patient()
+    #	flush_hiv_reception()
+    flush_give_drugs()
+    flush_hiv_first_visit()
+    flush_art_visit()
+    flush_hiv_staging()
+    flush_update_outcome()
+
+    puts "Finished at : #{Time.now}"
+    puts "#{total_enc} Encounters were processed"
+    t2 = Time.now
+    elapsed = time_diff_milli t1, t2
+    eps = total_enc / elapsed
+    puts "#{total_enc} Encounters were processed in #{elapsed} for #{eps} eps"
 
 end
 
 
 def time_diff_milli(start, finish)
-   (finish - start) * 1000.0
+   (finish - start)
 end
 
 
@@ -136,7 +142,25 @@ def self.check_for_visitdate(patient_id,encounter_date)
     vdate.save                                                                
   end                  
   return vdate.id                                                        
-end 
+end
+
+def preprocess_insert_val(val)
+
+  # numbers returned as strings with no quotes
+  if val.kind_of? Integer
+    return val.to_s
+  end
+
+  # null values returned
+  if val == nil || val == ""
+    return "NULL"
+  end
+
+  # escape characters and return with quotes
+  val = val.to_s.gsub("'","''")
+  return "'" + val + "'"
+end
+
 
 def self.create_patient(pat)
 	temp = PatientName.find(:last, :conditions => ["patient_id = ? and voided = 0", pat.id])
@@ -177,7 +201,7 @@ def self.create_patient(pat)
 
   if Use_queue > 0
 	  Patient_queue << patient
-	  if Patient_queue[49] != nil
+	  if Patient_queue[Patient_queue_size-1] != nil
 	    flush_patient()
 	  end
 	else
@@ -301,10 +325,19 @@ def self.create_hiv_first_visit(visit_encounter_id, encounter)
           enc.date_of_art_initiation = ob.value_datetime
        when 'DATE LAST ARVS TAKEN'
           enc.date_last_arv_taken = ob.value_datetime
-      end
-      
-		enc.save      
+     end
 
+
+     # check if we are to utilize the queue
+     if Use_queue > 0
+       Hiv_first_visit_queue << enc
+       if Hiv_first_visit_queue[Hiv_first_visit_size-1] != nil
+         flush_hiv_first_visit()
+       end
+     else
+       enc.save
+     end
+      
   end
 
 end
@@ -323,9 +356,19 @@ def self.create_give_drug_record(visit_encounter_id, encounter)
         give_drugs_count+=1
      end
   end
-  enc.save
+
+  # check if we are to utilize the queue
+  if Use_queue > 0
+    Give_drugs_queue << enc
+    if Give_drugs_queue[Give_drugs_size-1] != nil
+      flush_give_drugs()
+    end
+  else
+    enc.save
+  end
 
 end
+
 
 def self.assign_drugs_dispensed(encounter,drug_order,count)
   case count
@@ -364,8 +407,15 @@ def self.create_update_outcome(visit_encounter_id, encounter)
 					end
 				 end 
 		  end
-		  
-		  enc.save
+
+      if Use_queue > 0
+        Update_outcome_queue << enc
+        if Update_outcome_queue[Update_outcome_size-1] != nil
+          flush_update_outcome()
+        end
+      else
+        enc.save()
+      end
 
 end
 
@@ -530,7 +580,16 @@ def	self.create_art_encounter(visit_encounter_id, encounter)
   end
 	end
 	self.drug_induced_symptom(enc) rescue nil
-	enc.save
+
+  if Use_queue > 0
+    Art_visit_queue << enc
+    if Art_visit_queue[Art_visit_size - 1] != nil
+      flush_art_visit()
+    end
+  else
+    enc.save()
+  end
+
 end
 
 def	self.create_hiv_staging_encounter(visit_encounter_id, encounter)		
@@ -545,8 +604,18 @@ def	self.create_hiv_staging_encounter(visit_encounter_id, encounter)
   enc.reason_for_starting_art = PersonAttribute.find(:last, :conditions => ["person_id = ? and person_attribute_type_id = ?",encounter.patient_id, startreason]).value 
   (encounter.observations || []).each do |ob|
   		self.repeated_obs(enc, ob)
-	end
-  enc.save
+  end
+
+  if Use_queue > 0
+    Hiv_staging_queue << enc
+    if Hiv_staging_queue[Hiv_stage_size - 1] != nil
+      flush_hiv_staging()
+    end
+  else
+    enc.save()
+  end
+  
+  
 end
 
 def self.repeated_obs(enc, ob)
@@ -774,7 +843,11 @@ def self.get_concept(id)
 end
 
 def flush_patient() 
-  
+
+  if Patient_queue.length == 0
+    return
+  end
+
   # make an array of strings representing the inserted values
   inserts = [];
   Patient_queue.each do |patient|
@@ -823,7 +896,7 @@ def flush_patient()
 	#inserts.push('(' +'"' + given_name +'","' + middle_name +'","' + family_name + '","' + gender + '",' + voided.to_s + ',"' ###+ #void_reason + '", ' + dob.to_s + ',' + date_created.to_s + ','+ creator.to_s + ')' )    
 #	inserts.push("('#{given_name}','#{middle_name}','#{family_name}','#{gender}',#{voided},'#{void_reason}','#{dob}','##{date_created}',#{creator})")    
   
- inserts.push("('#{given_name}','#{middle_name}','#{family_name}','#{gender}','#{dob}','#{dob_estimated}',#{dead},'#{traditional_authority}','#{current_address}','#{landmark}','#{cellphone_number}','#{home_phone_number}','#{office_phone_number}','#{occupation}','#{nat_id}','#{art_number}',#{pre_art_number},'#{tb_number}','#{legacy_id}','#{legacy_id2}','#{legacy_id3}','#{new_nat_id}','#{prev_art_number}','#{filing_number}','#{archived_filing_number}',#{voided},'#{void_reason}','#{date_voided}','#{voided_by}','#{date_created}',#{creator})" ) 
+ inserts.push("( #{preprocess_insert_val(given_name)}, #{preprocess_insert_val(middle_name)}, #{preprocess_insert_val(family_name)},'#{gender}','#{dob}','#{dob_estimated}',#{dead},'#{traditional_authority}','#{current_address}','#{landmark}','#{cellphone_number}','#{home_phone_number}','#{office_phone_number}','#{occupation}','#{nat_id}','#{art_number}',#{pre_art_number},'#{tb_number}','#{legacy_id}','#{legacy_id2}','#{legacy_id3}','#{new_nat_id}','#{prev_art_number}','#{filing_number}','#{archived_filing_number}',#{voided},'#{void_reason}','#{date_voided}','#{voided_by}','#{date_created}',#{creator})" )
 
  end
  
@@ -835,7 +908,7 @@ sql = "INSERT INTO patients(given_name,middle_name,family_name,gender,dob,dob_es
   
   # execute
   CONN.execute sql
-#  Patient_queue = []
+  Patient_queue.clear()
 
 end
 
@@ -855,4 +928,67 @@ def flush_hiv_reception()
  # clear the queue
  #Hiv_reception_queue = []
 end
-start 
+
+def flush_give_drugs()
+
+  flush_queue(Give_drugs_queue, "give_drugs_encounters", ['visit_encounter_id', 'patient_id', 'drug_name1', 'dispensed_quantity1', 'drug_name2', 'dispensed_quantity2', 'drug_name3', 'dispensed_quantity3', 'drug_name4', 'dispensed_quantity4', 'drug_name5', 'dispensed_quantity5', 'voided', 'void_reason', 'date_voided', 'voided_by', 'date_created', 'creator'])
+
+end
+
+
+def flush_hiv_first_visit
+
+  flush_queue(Hiv_first_visit_queue, "first_visit_encounters",  ['visit_encounter_id','patient_id','agrees_to_follow_up','date_of_hiv_pos_test','date_of_hiv_pos_test_estimated','location_of_hiv_pos_test','arv_number_at_that_site','location_of_art_initiation','taken_arvs_in_last_two_months','taken_arvs_in_last_two_weeks','has_transfer_letter','site_transferred_from','date_of_art_initiation','ever_registered_at_art','ever_received_arv','last_arv_regimen','date_last_arv_taken','date_last_arv_taken_estimated','voided','void_reason','date_voided','voided_by','date_created','creator'])
+
+end
+
+def flush_art_visit()
+
+  flush_queue(Art_visit_queue, "art_visit_encounters", ['visit_encounter_id','patient_id','patient_pregnant','patient_breast_feeding','using_family_planning_method','family_planning_method_used','abdominal_pains','anorexia','cough','diarrhoea','fever','jaundice','leg_pain_numbness','vomit','weight_loss','peripheral_neuropathy','hepatitis','anaemia','lactic_acidosis','lipodystrophy','skin_rash','other_symptoms','drug_induced_Abdominal_pains','drug_induced_anorexia','drug_induced_diarrhoea','drug_induced_jaundice','drug_induced_leg_pain_numbness','drug_induced_vomit','drug_induced_peripheral_neuropathy','drug_induced_hepatitis','drug_induced_anaemia','drug_induced_lactic_acidosis','drug_induced_lipodystrophy','drug_induced_skin_rash','drug_induced_other_symptom','tb_status','refer_to_clinician','prescribe_arv','drug_name_brought_to_clinic1','drug_quantity_brought_to_clinic1','drug_left_at_home1','drug_name_brought_to_clinic2','drug_quantity_brought_to_clinic2','drug_left_at_home2','drug_name_brought_to_clinic3','drug_quantity_brought_to_clinic3','drug_left_at_home3','drug_name_brought_to_clinic4','drug_quantity_brought_to_clinic4','drug_left_at_home4','arv_regimen','drug1','dosage1','frequency1','drug2','dosage2','frequency2','drug3','dosage3','frequency3','drug4','dosage4','frequency4','prescription_duration','prescribe_cpt','number_of_condoms_given','depo_provera_given','continue_treatment_at_clinic','voided','void_reason','date_voided','voided_by','date_created','creator'])
+
+end
+  
+def flush_hiv_staging() 
+  
+  flush_queue(Hiv_staging_queue, "hiv_staging_encounters", ['visit_encounter_id','patient_id','patient_pregnant','patient_breast_feeding','cd4_count_available','cd4_count','cd4_count_modifier','cd4_count_percentage','date_of_cd4_count','asymptomatic','persistent_generalized_lymphadenopathy','unspecified_stage_1_cond','molluscumm_contagiosum','wart_virus_infection_extensive','oral_ulcerations_recurrent','parotid_enlargement_persistent_unexplained','lineal_gingival_erythema','herpes_zoster','respiratory_tract_infections_recurrent','unspecified_stage2_condition','angular_chelitis','papular_prurtic_eruptions','hepatosplenomegaly_unexplained','oral_hairy_leukoplakia','severe_weight_loss','fever_persistent_unexplained','pulmonary_tuberculosis','pulmonary_tuberculosis_last_2_years','severe_bacterial_infection','bacterial_pnuemonia','symptomatic_lymphoid_interstitial_pnuemonitis','chronic_hiv_assoc_lung_disease','unspecified_stage3_condition','aneamia','neutropaenia','thrombocytopaenia_chronic','diarhoea','oral_candidiasis','acute_necrotizing_ulcerative_gingivitis','lymph_node_tuberculosis','toxoplasmosis_of_brain','cryptococcal_meningitis','progressive_multifocal_leukoencephalopathy','disseminated_mycosis','candidiasis_of_oesophagus','extrapulmonary_tuberculosis','cerebral_non_hodgkin_lymphoma','kaposis','hiv_encephalopathy','bacterial_infections_severe_recurrent','unspecified_stage_4_condition','pnuemocystis_pnuemonia','disseminated_non_tuberculosis_mycobactierial_infection','cryptosporidiosis','isosporiasis','symptomatic_hiv_asscoiated_nephropathy','chronic_herpes_simplex_infection','cytomegalovirus_infection','toxoplasomis_of_the_brain_1month','recto_vaginal_fitsula','reason_for_starting_art','who_stage','voided','void_reason','date_voided','voided_by','date_created','creator'])
+
+end
+
+def flush_update_outcome()
+  
+  flush_queue(Update_outcome_queue, "outcome_encounters", ['visit_encounter_id','patient_id','state','outcome_date','transferred_out_location','voided','void_reason','date_voided','voided_by','date_created','creator'])
+
+end
+
+
+def flush_queue(queue, table, columns)
+    if queue.length == 0
+      return
+    end
+
+    insert_vals = columns
+
+    inserts = []
+
+    queue.each { |e|
+      i = ("(")
+      insert_vals.each { |insert_val|
+        i += preprocess_insert_val(eval("e.#{insert_val}"))
+        i += ", "
+      }
+      # remove last comma space before appending the end parenthesis
+      i = i.chop.chop
+      i += ")"
+      inserts << i
+    }
+
+    sql = "INSERT INTO #{table} (#{insert_vals.join(", ")}) VALUES #{inserts.join(", ")}"
+
+    CONN.execute sql
+    queue.clear()
+  end
+
+
+
+
+  start 
