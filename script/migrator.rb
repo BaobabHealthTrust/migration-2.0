@@ -9,7 +9,9 @@
 	Givedrug= EncounterType.find_by_name("Give Drugs")		
 	Preart = EncounterType.find_by_name("Pre ART visit")
 	Concepts = Hash.new()
-		
+	
+  Bart_database = YAML.load(File.open(File.join(RAILS_ROOT, "config/database.yml"), "r"))['bart']["database"]	
+
 def start
 	
 	puts "Started at : #{Time.now}"		
@@ -21,7 +23,7 @@ def start
 	elapsed = time_diff_milli t1, t2
 	puts "Loaded concepts in #{elapsed}"
 	
-	patients = ActiveRecord::Base.connection.select_all("Select * from Zomba_data.patient limit 10")
+	patients = ActiveRecord::Base.connection.select_all("Select * from #{Bart_database}.patient limit 10")
 	count = patients.length
 	puts "Number of patients to be migrated #{count}"
 	sleep 2 
@@ -34,7 +36,7 @@ def start
 		             "Give drugs", "Pre ART visit"]	             
 		enc_type.each do |enc_type|
 		pat_id = patient["patient_id"]
-		encounters = Encounter.find_by_sql("Select * from Zomba_data.encounter where patient_id = #{pat_id} and encounter_type = #{self.get_encounter(enc_type)}")
+		encounters = Encounter.find_by_sql("Select * from #{Bart_database}.encounter where patient_id = #{pat_id} and encounter_type = #{self.get_encounter(enc_type)}")
 		 		
 			encounters.each do |enc|
 				total_enc +=1
