@@ -9,6 +9,7 @@
 	Givedrug= EncounterType.find_by_name("Give Drugs")		
 	Preart = EncounterType.find_by_name("Pre ART visit")
 	Concepts = Hash.new()
+	
 	Use_queue = 1
 	Patient_queue = Array.new
 	Patient_queue_size = 2
@@ -30,7 +31,9 @@
 	Give_drugs_size = 500
 	Pre_art_visit_queue = Array.new
 	Pre_art_visit_size = 50
-  Source_db = "Zomba_data"
+  Source_db= YAML.load(File.open(File.join(RAILS_ROOT, "config/database.yml"), "r"))['bart']["database"]	
+
+
 	
 	CONN = ActiveRecord::Base.connection
 
@@ -59,11 +62,9 @@
 
     patients.each do |patient|
       pt1 = Time.now
-#      enc_type = ["HIV Reception", "HIV first visit", "Height/Weight",
-#                  "HIV staging", "ART visit", "Update outcome",
-#                  "Give drugs", "Pre ART visit"]
-#    enc_type = []
-      enc_type = ["HIV first visit", "Give drugs", "ART visit", "HIV staging", "Update outcome", ]
+      enc_type = ["HIV Reception", "HIV first visit", "Height/Weight",
+                  "HIV staging", "ART visit", "Update outcome",
+                  "Give drugs", "Pre ART visit"]
 
       enc_type.each do |enc_type|
         pat_id = patient["patient_id"]
