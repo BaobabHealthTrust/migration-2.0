@@ -103,6 +103,7 @@
   flush_hiv_staging()
   flush_update_outcome()
 	flush_users()
+	flush_guardians()
     puts "Finished at : #{Time.now}"
     puts "#{total_enc} Encounters were processed"
     t2 = Time.now
@@ -228,8 +229,8 @@ def self.create_guardian(pat)
 			guardian.gender = temp_relative.gender rescue nil
 			guardian.relationship = RelationshipType.find(relative.relationship).name
 			guardian.creator = temp_relative.creator
-      guardian.date_created = Time.now()
-			guardian.save
+      guardian.date_created = relative.date_created
+			Guardian_queue << guardian
     end
 end
 
@@ -923,6 +924,12 @@ end
 def flush_users()
 	flush_queue(Users_queue,'users', ['username','first_name','middle_name','last_name','password','salt','date_created','voided','void_reason','date_voided','voided_by','creator'])
 end
+
+def flush_guardians()
+	flush_queue(Guardian_queue, "guardians", ['patient_id','family_name','name','gender','relationship','creator','date_created'])	
+end
+
+
 def flush_queue(queue, table, columns)
     if queue.length == 0
       return
@@ -949,6 +956,7 @@ def flush_queue(queue, table, columns)
     CONN.execute sql
     queue.clear()
 end
+
 
 def self.create_users()
 	users = User.find_by_sql("Select* from  #{Source_db}.users")
