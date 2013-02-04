@@ -297,41 +297,42 @@ def self.create_guardian(pat)
 end
 
 def self.get_patient_identifiers(pat_id)
-  pat_identifiers = Hash.new('NULL')
 
-  identifiers = PatientIdentifier.find(:all, :conditions => ["patient_id = ? and voided = 0", pat_id])
-  identifiers.each do |id|
-    id_type=PatientIdentifierType.find(id.identifier_type).name
-    case id_type.upcase
-      when 'NATIONAL ID'
-        pat_identifiers["nat_id"] = id.identifier
-      when 'OCCUPATION'
-        pat_identifiers["occ"] = id.identifier
-      when 'CELL PHONE NUMBER'
-        pat_identifiers["cell"] = id.identifier
-      when 'TRADITIONAL AUTHORITY '
-        pat_identifiers["ta"] = id.identifier
-      when 'FILING NUMBER'
-        pat_identifiers["filing_number"] = id.identifier
-      when 'HOME PHONE NUMBER'
-        pat_identifiers["home_phone"] = id.identifier
-      when 'OFFICE PHONE NUMBER'
-        pat_identifiers["office_phone"] = id.identifier
-      when 'ART NUMBER'
-        pat_identifiers["art_number"] = id.identifier
-      when 'PREVIOUS ART NUMBER'
-        pat_identifiers["prev_art_number"] = id.identifier
-      when 'NEW NATIONAL ID'
-        pat_identifiers["new_nat_id"] = id.identifier
-      when 'PRE ARV NUMBER ID'
-        pat_identifiers["pre_arv_number"] = id.identifier
-      when 'TB TREATMENT ID'
-        pat_identifiers["tb_id"] = id.identifier
-      when 'ARCHIVED FILING NUMBER'
-        pat_identifiers["archived_filing_number"] = id.identifier
-    end
-  end
-  return pat_identifiers
+	pat_identifiers = Hash.new()	
+	
+	identifiers = PatientIdentifier.find(:all, :conditions => ["patient_id = ? and voided = 0", pat_id])
+	identifiers.each do |id|
+		id_type=PatientIdentifierType.find(id.identifier_type).name
+		case id_type.upcase
+			when 'NATIONAL ID' 
+				pat_identifiers["nat_id"] = id.identifier
+			when 'OCCUPATION'
+				pat_identifiers["occ"] = id.identifier				
+			when 'CELL PHONE NUMBER'
+				pat_identifiers["cell"] = id.identifier			
+			when 'TRADITIONAL AUTHORITY '
+				pat_identifiers["ta"] = id.identifier
+			when 'FILING NUMBER'
+				pat_identifiers["filing_number"] = id.identifier
+			when 'HOME PHONE NUMBER'
+				pat_identifiers["home_phone"] = id.identifier
+			when 'OFFICE PHONE NUMBER'
+				pat_identifiers["office_phone"] = id.identifier
+			when 'ART NUMBER'
+				pat_identifiers["art_number"] = id.identifier
+			when 'PREVIOUS ART NUMBER'
+				pat_identifiers["prev_art_number"] = id.identifier
+			when 'NEW NATIONAL ID'
+				pat_identifiers["new_nat_id"] = id.identifier
+			when 'PRE ARV NUMBER ID'
+				pat_identifiers["pre_arv_number"] = id.identifier
+			when 'TB TREATMENT ID'
+				pat_identifiers["tb_id"] = id.identifier
+			when 'ARCHIVED FILING NUMBER'
+				pat_identifiers["archived_filing_number"] = id.identifier
+		end
+	end
+	return pat_identifiers
 end
 
 def self.create_record(visit_encounter_id, encounter)
