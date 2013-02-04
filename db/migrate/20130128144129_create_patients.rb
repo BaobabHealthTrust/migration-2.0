@@ -22,6 +22,7 @@ ActiveRecord::Base.connection.execute <<EOF
 	`home_phone_number` varchar(255),
 	`office_phone_number` varchar(255),
 	`occupation` varchar(255),
+  `guardian_id` int,
 	`nat_id` varchar(255),
 	`art_number` varchar(255),
 	`pre_art_number` varchar(255),
