@@ -29,7 +29,7 @@ ActiveRecord::Base.connection.execute <<EOF
 	`void_reason` varchar(255),
 	`date_voided` date,
 	`voided_by` int (11),
-	`date_created` date not null,
+	`date_created` datetime not null,
 	`creator` int
  );
 EOF

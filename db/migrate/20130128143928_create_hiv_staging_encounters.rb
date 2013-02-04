@@ -74,7 +74,7 @@ create table `hiv_staging_encounters`(
 `void_reason` varchar(255), 
 `date_voided` date,
 `voided_by` int(11),
-`date_created` date,
+`date_created` datetime,
 `creator` int
 
 );

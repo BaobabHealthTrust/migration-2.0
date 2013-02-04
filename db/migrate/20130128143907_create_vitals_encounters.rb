@@ -20,7 +20,7 @@ create table `vitals_encounters`(
 `void_reason` varchar(255),
 `date_voided` date default null,
 `voided_by` int(11),
-`date_created` date default null,
+`date_created` datetime default null,
 `creator` int(11)
 );
 
