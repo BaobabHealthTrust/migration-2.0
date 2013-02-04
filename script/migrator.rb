@@ -63,19 +63,19 @@
 
 
     patients.each do |patient|
+    	puts "Working on patient with ID: #{patient.id}"
       pt1 = Time.now
       enc_type = ["HIV Reception", "HIV first visit", "Height/Weight",
                   "HIV staging", "ART visit", "Update outcome",
                   "Give drugs", "Pre ART visit"]
 
       enc_type.each do |enc_type|
-        pat_id = patient["patient_id"]
-        encounters = Encounter.find_by_sql("Select * from #{Source_db}.encounter where patient_id = #{pat_id} and encounter_type = #{self.get_encounter(enc_type)}")
+        encounters = Encounter.find_by_sql("Select * from #{Source_db}.encounter where patient_id = #{patient.id} and encounter_type = #{self.get_encounter(enc_type)}")
         puts("#{encounters.length} encounters of type #{enc_type} found")
         encounters.each do |enc|
           total_enc +=1
           pat_enc +=1
-          visit_encounter_id = self.check_for_visitdate(pat_id, enc.encounter_datetime.to_date)
+          visit_encounter_id = self.check_for_visitdate(patient.id, enc.encounter_datetime.to_date)
           self.create_record(visit_encounter_id, enc)
         end
       end
@@ -186,6 +186,7 @@ def self.create_patient(pat)
 	patient.traditional_authority = ids["ta"]
 #	current_address = ids["ta"]
 #	landmark= 
+	patient.guardian_id = Relationship.find(:last, :conditions => ["person_id = ?", pat.id]).relative_id rescue nil
 	patient.cellphone_number= ids["cell"]
 	patient.home_phone_number= ids["home_phone"]
 	patient.office_phone_number= ids["office_phone"]
@@ -346,6 +347,7 @@ def self.create_hiv_first_visit(visit_encounter_id, encounter)
 	       	Hiv_first_visit_queue << enc
       else
 					flush_hiv_first_visit()
+					enc.save()
       end
      else
        enc.save
@@ -376,7 +378,8 @@ def self.create_give_drug_record(visit_encounter_id, encounter)
 	   	Give_drugs_queue << enc
 	  else
 		  flush_give_drugs()
-	  end
+			enc.save()
+		end
   else
     enc.save
   end
@@ -427,6 +430,7 @@ def self.create_update_outcome(visit_encounter_id, encounter)
         	Update_outcome_queue << enc
         else
 				  flush_update_outcome()
+ 					enc.save()
         end
       else
         enc.save()
@@ -462,6 +466,7 @@ def self.create_vitals_record(visit_encounter_id, encounter)
 			  Height_weight_queue << enc
 		else
 				flush_height_weight_queue()
+				enc.save()
 		end
 	else 
 		enc.save()
@@ -488,6 +493,7 @@ def	self.create_hiv_reception_record(visit_encounter_id, encounter)
 		  Hiv_reception_queue << enc
 		else
 			flush_hiv_reception()
+			enc.save()
 		end
 	else
 	  enc.save()
@@ -511,6 +517,7 @@ def self.create_pre_art_record(visit_encounter_id, encounter)
 	  	Pre_art_visit_queue << enc
 	  else 
 	  	flush_pre_art_visit_queue()
+	  	enc.save()
 	  end
 	else
 	  enc.save()
@@ -624,6 +631,7 @@ def	self.create_art_encounter(visit_encounter_id, encounter)
     	Art_visit_queue << enc
     else
 			flush_art_visit()    
+			enc.save()
     end
   else
     enc.save()
@@ -653,6 +661,7 @@ def	self.create_hiv_staging_encounter(visit_encounter_id, encounter)
 	    Hiv_staging_queue << enc
 	  else
 	  	flush_hiv_staging() 
+	  	enc.save()
 	  end
   else
     enc.save()
