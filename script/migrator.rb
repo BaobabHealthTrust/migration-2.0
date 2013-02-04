@@ -50,7 +50,7 @@
     elapsed = time_diff_milli t1, t2
     puts "Loaded concepts in #{elapsed}"
 
-    patients = Patient.find_by_sql("Select * from #{Source_db}.patient")
+    patients = Patient.find_by_sql("Select * from #{Source_db}.patient LIMIT 7000, 8000")
     count = patients.length
     puts "Number of patients to be migrated #{count}"
 
@@ -842,7 +842,7 @@ def self.get_concept(id)
 		return Concept.find(id).name
 	else
 		return Concepts[id].name
-	end
+	end rescue Concept.find_by_name('Missing').id
 end
 
 def preprocess_insert_val(val)
