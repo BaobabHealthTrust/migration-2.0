@@ -9,8 +9,11 @@
 	Givedrug= EncounterType.find_by_name("Give Drugs")		
 	Preart = EncounterType.find_by_name("Pre ART visit")
 	Concepts = Hash.new()
+  Visit_encounter_hash = Hash.new()
 	
 	Use_queue = 1
+  Output_sql = 1
+  Execute_sql = 1
 	Patient_queue = Array.new
 	Patient_queue_size = 2
 	Guardian_queue = Array.new
@@ -41,6 +44,15 @@
 
   def start
 
+    $visit_encounter_id = 1
+
+    started_at = Time.now.strftime("%Y-%m-%d-%H%M%S")
+
+    if Output_sql == 1
+      $visits_outfile = File.open( "./migration_export_visits-" + started_at + ".sql","w" )
+      $pat_encounters_outfile = File.open( "./migration_export_pat_encounters-" + started_at + ".sql","w" )
+    end
+
     puts "Started at : #{Time.now}"
     t1 = Time.now
     Concept.find(:all).map do |con|
@@ -50,22 +62,22 @@
     elapsed = time_diff_milli t1, t2
     puts "Loaded concepts in #{elapsed}"
 
-    patients = Patient.find_by_sql("Select * from #{Source_db}.patient limit 20")
+    patients = Patient.find_by_sql("Select * from #{Source_db}.patient limit 100")
     count = patients.length
     puts "Number of patients to be migrated #{count}"
 
-
-    #sleep 2
     total_enc = 0
     pat_enc = 0
     t1 = Time.now
 
 
+    enc_type = ["HIV Reception", "HIV first visit", "Height/Weight",
+                "HIV staging", "ART visit", "Update outcome",
+                "Give drugs", "Pre ART visit"]
+
     patients.each do |patient|
       pt1 = Time.now
-      enc_type = ["HIV Reception", "HIV first visit", "Height/Weight",
-                  "HIV staging", "ART visit", "Update outcome",
-                  "Give drugs", "Pre ART visit"]
+      puts "Working on patient #{patient.id}"
 
       enc_type.each do |enc_type|
         pat_id = patient["patient_id"]
@@ -104,6 +116,12 @@
   flush_update_outcome()
 	flush_users()
 	flush_guardians()
+
+    if Output_sql == 1
+      $visits_outfile.close()
+      $pat_encounters_outfile.close()
+    end
+
     puts "Finished at : #{Time.now}"
     puts "#{total_enc} Encounters were processed"
     t2 = Time.now
@@ -141,20 +159,38 @@ def self.get_encounter(type)
 end
 
 
-def self.check_for_visitdate(patient_id,encounter_date)                                                 
-  vdate = VisitEncounter.find(:first,                                    
-    :conditions => ["patient_id = ? AND visit_date = ?",                      
-    patient_id,encounter_date])                               
-  if vdate.blank?                                                        
-    vdate = VisitEncounter.new()                                              
-    vdate.visit_date = encounter_date                              
-    vdate.patient_id = patient_id                                        
-    vdate.save                                                                
-  end                  
-  return vdate.id                                                        
-end
+  def self.check_for_visitdate(patient_id, encounter_date)
+    # check if we have seen this patient visit and return the visit encounter id if we have
+    if Visit_encounter_hash["#{patient_id}#{encounter_date}"] != nil
+      return Visit_encounter_hash["#{patient_id}#{encounter_date}"]
+    end
 
-def preprocess_insert_val(val)
+    # make a new visit encounter
+    vdate = VisitEncounter.new()
+    vdate.visit_date = encounter_date
+    vdate.patient_id = patient_id
+
+    # if executing sql utilize db to generate ids
+    if Execute_sql == 1
+      vdate.save
+      Visit_encounter_hash["#{patient_id}#{encounter_date}"] = vdate.id
+    else
+      # generate an id internally
+      Visit_encounter_hash["#{patient_id}#{encounter_date}"] = $visit_encounter_id
+      # increment the counter
+      $visit_encounter_id += 1
+      # assign the id to the vdate object
+      vdate.id = Visit_encounter_hash["#{patient_id}#{encounter_date}"]
+    end
+
+    if Output_sql == 1
+      $visits_outfile << "INSERT INTO visit_encounters (id, patient_id, visit_date) VALUES (#{vdate.id}, #{patient_id}, '#{encounter_date}');\n"
+    end
+
+    return vdate.id
+  end
+
+  def preprocess_insert_val(val)
 
   # numbers returned as strings with no quotes
   if val.kind_of? Integer
@@ -956,7 +992,14 @@ def flush_queue(queue, table, columns)
 
     sql = "INSERT INTO #{table} (#{insert_vals.join(", ")}) VALUES #{inserts.join(", ")}"
 
-    CONN.execute sql
+    if Output_sql == 1
+      $pat_encounters_outfile << sql + ";\n"
+    end
+
+    if Execute_sql == 1
+      CONN.execute sql
+    end
+
     queue.clear()
 end
 
