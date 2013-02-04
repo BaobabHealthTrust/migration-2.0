@@ -240,7 +240,7 @@ def self.create_guardian(pat)
 end
 
 def self.get_patient_identifiers(pat_id)
-	pat_identifiers = Hash.new('NULL')	
+	pat_identifiers = Hash.new()	
 	
 	identifiers = PatientIdentifier.find(:all, :conditions => ["patient_id = ? and voided = 0", pat_id])
 	identifiers.each do |id|
