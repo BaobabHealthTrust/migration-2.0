@@ -16,7 +16,7 @@ create table `outcome_encounters`(
 `void_reason` varchar(255),
 `date_voided` date,
 `voided_by` int,
-`date_created` date not null,
+`date_created` datetime not null,
 `creator` int not null
 
 );
