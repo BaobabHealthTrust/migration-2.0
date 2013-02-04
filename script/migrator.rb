@@ -882,7 +882,7 @@ def self.get_concept(id)
 		return Concept.find(id).name
 	else
 		return Concepts[id].name
-	end
+	end rescue Concept.find_by_name('Missing').id
 end
 
 def preprocess_insert_val(val)

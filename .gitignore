@@ -7,3 +7,4 @@ config/settings.yml
 schema.rb
 *~
 Gemfile.lock
+.idea/*
