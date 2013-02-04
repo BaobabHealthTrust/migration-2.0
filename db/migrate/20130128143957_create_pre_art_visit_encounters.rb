@@ -48,7 +48,7 @@ ActiveRecord::Base.connection.execute <<EOF
 `prescription_duration` varchar(25),
 `number_of_condoms_given` int ,
 `prescribe_ipt` varchar(25),
-`date_created` date default null,
+`date_created` datetime default null,
 `creator` int(11)
 
 	);

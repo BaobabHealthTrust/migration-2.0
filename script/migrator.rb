@@ -50,7 +50,7 @@
     elapsed = time_diff_milli t1, t2
     puts "Loaded concepts in #{elapsed}"
 
-    patients = Patient.find_by_sql("Select * from #{Source_db}.patient")
+    patients = Patient.find_by_sql("Select * from #{Source_db}.patient limit 20")
     count = patients.length
     puts "Number of patients to be migrated #{count}"
 
@@ -74,7 +74,7 @@
         encounters.each do |enc|
           total_enc +=1
           pat_enc +=1
-          visit_encounter_id = self.check_for_visitdate(pat_id, enc.encounter_datetime.to_date)
+          visit_encounter_id = self.check_for_visitdate(pat_id, enc.encounter_datetime)
           self.create_record(visit_encounter_id, enc)
         end
       end
@@ -93,7 +93,7 @@
 	
 	# flush the queues
 	flush_patient()
-	flush_hiv_first_visit	()
+	flush_hiv_first_visit()
 	flush_hiv_reception()	
 	flush_pre_art_visit_queue()
 	flush_height_weight_queue()
@@ -147,7 +147,7 @@ def self.check_for_visitdate(patient_id,encounter_date)
     patient_id,encounter_date])                               
   if vdate.blank?                                                        
     vdate = VisitEncounter.new()                                              
-    vdate.visit_date = encounter_date.to_date                              
+    vdate.visit_date = encounter_date                              
     vdate.patient_id = patient_id                                        
     vdate.save                                                                
   end                  
@@ -842,7 +842,7 @@ def self.get_concept(id)
 		return Concept.find(id).name
 	else
 		return Concepts[id].name
-	end
+	end rescue Concept.find_by_name('Missing').id
 end
 
 def preprocess_insert_val(val)
