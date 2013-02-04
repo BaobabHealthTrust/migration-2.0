@@ -8,29 +8,30 @@
 	Updateoutcome	= EncounterType.find_by_name("Update outcome")			
 	Givedrug= EncounterType.find_by_name("Give Drugs")		
 	Preart = EncounterType.find_by_name("Pre ART visit")
+	Height = Concept.find_by_name("Height")
 	Concepts = Hash.new()
 	
 	Use_queue = 1
 	Patient_queue = Array.new
 	Patient_queue_size = 2
 	Guardian_queue = Array.new
-	Guardian_queue_size = 50
+	Guardian_queue_size = 1000
 	Hiv_reception_queue = Array.new
-	Hiv_reception_size = 50
+	Hiv_reception_size = 1000
 	Hiv_first_visit_queue = Array.new
-	Hiv_first_visit_size = 50
+	Hiv_first_visit_size = 1000
 	Height_weight_queue = Array.new
-	Height_weight_size = 50
+	Height_weight_size = 1000
 	Hiv_staging_queue = Array.new
-	Hiv_stage_size = 50
+	Hiv_stage_size = 1000
 	Art_visit_queue = Array.new
-	Art_visit_size = 50
+	Art_visit_size = 1000
 	Update_outcome_queue = Array.new
-	Update_outcome_size = 50
+	Update_outcome_size = 1000
 	Give_drugs_queue = Array.new
-	Give_drugs_size = 500
+	Give_drugs_size = 1000
 	Pre_art_visit_queue = Array.new
-	Pre_art_visit_size = 50
+	Pre_art_visit_size = 1000
 	Users_queue = Array.new
   Source_db= YAML.load(File.open(File.join(RAILS_ROOT, "config/database.yml"), "r"))['bart']["database"]	
 
@@ -50,7 +51,7 @@
     elapsed = time_diff_milli t1, t2
     puts "Loaded concepts in #{elapsed}"
 
-    patients = Patient.find_by_sql("Select * from #{Source_db}.patient limit 20")
+    patients = Patient.find_by_sql("Select * from #{Source_db}.patient limit 10")
     count = patients.length
     puts "Number of patients to be migrated #{count}"
 
@@ -74,7 +75,7 @@
         encounters.each do |enc|
           total_enc +=1
           pat_enc +=1
-          visit_encounter_id = self.check_for_visitdate(pat_id, enc.encounter_datetime)
+          visit_encounter_id = self.check_for_visitdate(pat_id, enc.encounter_datetime.to_date)
           self.create_record(visit_encounter_id, enc)
         end
       end
@@ -93,12 +94,11 @@
 	
 	# flush the queues
 	flush_patient()
-	flush_hiv_first_visit()
+	flush_hiv_first_visit	()
 	flush_hiv_reception()	
 	flush_pre_art_visit_queue()
 	flush_height_weight_queue()
   flush_give_drugs()
-  flush_hiv_first_visit()
   flush_art_visit()
   flush_hiv_staging()
   flush_update_outcome()
@@ -210,7 +210,11 @@ def self.create_patient(pat)
 	patient.creator = pat.creator
 
   if Use_queue > 0
-	  Patient_queue << patient
+  	if Patient_queue[Patient_queue_size-1] == nil 
+	  	Patient_queue << patient
+	  else
+	  		flush_patient()
+	  end
 	else
 	  patient.save()
 	end  
@@ -334,16 +338,20 @@ def self.create_hiv_first_visit(visit_encounter_id, encounter)
        when 'DATE LAST ARVS TAKEN'
           enc.date_last_arv_taken = ob.value_datetime
      end
-
+	end
 
      # check if we are to utilize the queue
      if Use_queue > 0
-       Hiv_first_visit_queue << enc
+     	if Hiv_first_visit_queue[Hiv_first_visit_size-1] == nil
+	       	Hiv_first_visit_queue << enc
+      else
+					flush_hiv_first_visit()
+      end
      else
        enc.save
      end
       
-  end
+  
 
 end
 
@@ -364,7 +372,11 @@ def self.create_give_drug_record(visit_encounter_id, encounter)
 
   # check if we are to utilize the queue
   if Use_queue > 0
-    Give_drugs_queue << enc
+  	if Give_drugs_queue[Give_drugs_size-1] == nil
+	   	Give_drugs_queue << enc
+	  else
+		  flush_give_drugs()
+	  end
   else
     enc.save
   end
@@ -411,7 +423,11 @@ def self.create_update_outcome(visit_encounter_id, encounter)
 		  end
 
       if Use_queue > 0
-        Update_outcome_queue << enc
+        if Update_outcome_queue[Update_outcome_size-1] == nil
+        	Update_outcome_queue << enc
+        else
+				  flush_update_outcome()
+        end
       else
         enc.save()
       end
@@ -433,12 +449,20 @@ def self.create_vitals_record(visit_encounter_id, encounter)
 		     enc.weight = ob.value_numeric
     end
   end
-
-  current_height = Observation.find(:last,
+	if enc.height == nil 
+  	current_height = Observation.find(:last,
   :conditions => ["concept_id = ? and patient_id = ?",Height.id,encounter.patient_id]).value_numeric.to_i rescue nil
-  enc.bmi = (enc.weight/(current_height*current_height)*10000) rescue nil
+	else 
+		current_height = enc.height 
+	end
+  enc.bmi = (enc.weight/(current_height*current_height)*10000) rescue nil	
+	
   if  Use_queue > 0
-	  Height_weight_queue << enc
+  	if Height_weight_queue[Height_weight_size-1] == nil
+			  Height_weight_queue << enc
+		else
+				flush_height_weight_queue()
+		end
 	else 
 		enc.save()
 	end
@@ -460,7 +484,11 @@ def	self.create_hiv_reception_record(visit_encounter_id, encounter)
 		
 	end
   if Use_queue > 0
-	  Hiv_reception_queue << enc
+  	if Hiv_reception_queue[Hiv_reception_size-1] == nil
+		  Hiv_reception_queue << enc
+		else
+			flush_hiv_reception()
+		end
 	else
 	  enc.save()
 	end  
@@ -479,7 +507,11 @@ def self.create_pre_art_record(visit_encounter_id, encounter)
 	drug_induced_symptom (enc) rescue nil
 
   if Use_queue > 0
-	  Pre_art_visit_queue << enc
+  	if Pre_art_visit_queue[Pre_art_visit_size-1] == nil
+	  	Pre_art_visit_queue << enc
+	  else 
+	  	flush_pre_art_visit_queue()
+	  end
 	else
 	  enc.save()
 	end  
@@ -588,7 +620,11 @@ def	self.create_art_encounter(visit_encounter_id, encounter)
 	self.drug_induced_symptom(enc) rescue nil
 
   if Use_queue > 0
-    Art_visit_queue << enc
+  	if Art_visit_queue[Art_visit_size-1] == nil
+    	Art_visit_queue << enc
+    else
+			flush_art_visit()    
+    end
   else
     enc.save()
   end
@@ -613,7 +649,11 @@ def	self.create_hiv_staging_encounter(visit_encounter_id, encounter)
   end
 
   if Use_queue > 0
-    Hiv_staging_queue << enc
+  	if Hiv_staging_queue[Hiv_stage_size-1] == nil
+	    Hiv_staging_queue << enc
+	  else
+	  	flush_hiv_staging() 
+	  end
   else
     enc.save()
   end
