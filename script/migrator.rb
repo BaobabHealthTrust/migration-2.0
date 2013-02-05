@@ -1,4 +1,3 @@
-require 'thread'
 
 Hivfirst = EncounterType.find_by_name("HIV first visit")
 Hivrecp = EncounterType.find_by_name("HIV Reception")
@@ -15,7 +14,7 @@ Visit_encounter_hash = Hash.new()
 
 Use_queue = 1
 Output_sql = 1
-Execute_sql = 0
+Execute_sql = 1
 
 Patient_queue = Array.new
 Patient_queue_size = 1000
@@ -35,6 +34,7 @@ Update_outcome_queue = Array.new
 Update_outcome_size = 1000
 Give_drugs_queue = Array.new
 Give_drugs_size = 1000
+Prescriptions = Hash.new(nil)
 Pre_art_visit_queue = Array.new
 Pre_art_visit_size = 1000
 Users_queue = Array.new
@@ -65,7 +65,7 @@ def start
   puts "Loaded concepts in #{elapsed}"
 
 
-  patients = Patient.find_by_sql("Select * from #{Source_db}.patient limit 100")
+  patients = Patient.find_by_sql("Select * from #{Source_db}.patient limit 10")
 
   count = patients.length
   puts "Number of patients to be migrated #{count}"
@@ -422,6 +422,21 @@ def self.create_give_drug_record(visit_encounter_id, encounter)
   enc.patient_id = encounter.patient_id
   enc.visit_encounter_id = visit_encounter_id
   enc.date_created = encounter.date_created
+	enc.pres_drug_name1 = Prescriptions[visit_encounter_id.to_s+"drug1"]
+	enc.pres_dosage1 = Prescriptions[visit_encounter_id.to_s+"dosage1"]
+	enc.pres_frequency1= Prescriptions[visit_encounter_id.to_s+"freq1"]
+	enc.pres_drug_name2 = Prescriptions[visit_encounter_id.to_s+"drug2"]
+	enc.pres_dosage2 = Prescriptions[visit_encounter_id.to_s+"dosage2"]
+	enc.pres_frequency2= Prescriptions[visit_encounter_id.to_s+"freq2"]
+	enc.pres_drug_name3 = Prescriptions[visit_encounter_id.to_s+"drug3"]
+	enc.pres_dosage3 = Prescriptions[visit_encounter_id.to_s+"dosage3"]
+	enc.pres_frequency3= Prescriptions[visit_encounter_id.to_s+"freq3"]
+	enc.pres_drug_name4 = Prescriptions[visit_encounter_id.to_s+"drug4"]
+	enc.pres_dosage4 = Prescriptions[visit_encounter_id.to_s+"dosage4"]
+	enc.pres_frequency4= Prescriptions[visit_encounter_id.to_s+"freq4"]
+	enc.pres_drug_name5 = Prescriptions[visit_encounter_id.to_s+"drug5"]
+	enc.pres_dosage5 = Prescriptions[visit_encounter_id.to_s+"dosage5"]
+	enc.pres_frequency5= Prescriptions[visit_encounter_id.to_s+"freq5"]
   enc.creator = encounter.creator
   give_drugs_count = 1
   (encounter.orders || []).each do |order|
@@ -430,6 +445,7 @@ def self.create_give_drug_record(visit_encounter_id, encounter)
       give_drugs_count+=1
     end
   end
+
 
   # check if we are to utilize the queue
   if Use_queue > 0
@@ -450,20 +466,21 @@ def self.assign_drugs_dispensed(encounter, drug_order, count)
   case count
     when 1
       encounter.dispensed_quantity1 = drug_order.quantity
-      encounter.drug_name1 = drug_order.drug.name
+      encounter.dispensed_drug_name1 = drug_order.drug.name
     when 2
       encounter.dispensed_quantity2 = drug_order.quantity
-      encounter.drug_name2 = drug_order.drug.name
+      encounter.dispensed_drug_name2 = drug_order.drug.name
     when 3
       encounter.dispensed_quantity3 = drug_order.quantity
-      encounter.drug_name3 = drug_order.drug.name
+      encounter.dispensed_drug_name3 = drug_order.drug.name
     when 4
       encounter.dispensed_quantity4 = drug_order.quantity
-      encounter.drug_name4 = drug_order.drug.name
+      encounter.dispensed_drug_name4 = drug_order.drug.name
     when 5
+		  encounter.dispensed_drug_name5 = drug_order.drug.name
       encounter.dispensed_quantity5 = drug_order.quantity
   end
-  encounter.drug_name5 = drug_order.drug.name
+
 end
 
 def self.create_update_outcome(visit_encounter_id, encounter)
@@ -584,30 +601,36 @@ def self.create_pre_art_record(visit_encounter_id, encounter)
 
 end
 
-def self.assign_drugs_prescribed(enc, prescribed_drug_name_hash, prescribed_drug_dosage_hash, prescribed_drug_frequency_hash)
+def self.assign_drugs_prescribed(id,enc, prescribed_drug_name_hash, prescribed_drug_dosage_hash, prescribed_drug_frequency_hash)
   count = 1
   (prescribed_drug_name_hash).each do |drug_name, name|
     case count
       when 1
-        enc.drug1 = drug_name
-        enc.dosage1 = prescribed_drug_dosage_hash[drug_name]
-        enc.frequency1 = prescribed_drug_frequency_hash[drug_name]
+        Prescriptions[id.to_s+"drug1"] = drug_name
+        Prescriptions[id.to_s+"dosage1"] = prescribed_drug_dosage_hash[drug_name]
+        Prescriptions[id.to_s+"freq1"] = prescribed_drug_frequency_hash[drug_name]
         count+=1
       when 2
-        enc.drug2 = drug_name
-        enc.dosage2 = prescribed_drug_dosage_hash[drug_name]
-        enc.frequency2 = prescribed_drug_frequency_hash[drug_name]
+        Prescriptions[id.to_s+"drug2"] = drug_name
+        Prescriptions[id.to_s+"dosage2"] = prescribed_drug_dosage_hash[drug_name]
+        Prescriptions[id.to_s+"freq2"] = prescribed_drug_frequency_hash[drug_name]
         count+=1
       when 3
-        enc.drug3 = drug_name
-        enc.dosage3 = prescribed_drug_dosage_hash[drug_name]
-        enc.frequency3 = prescribed_drug_frequency_hash[drug_name]
+        Prescriptions[id.to_s+"drug3"] = drug_name
+        Prescriptions[id.to_s+"dosage3"] = prescribed_drug_dosage_hash[drug_name]
+        Prescriptions[id.to_s+"freq3"] = prescribed_drug_frequency_hash[drug_name]
         count+=1
       when 4
-        enc.drug4 = drug_name
-        enc.dosage4 = prescribed_drug_dosage_hash[drug_name]
-        enc.frequency4 = prescribed_drug_frequency_hash[drug_name]
+        Prescriptions[id.to_s+"drug4"] = drug_name
+        Prescriptions[id.to_s+"dosage4"] = prescribed_drug_dosage_hash[drug_name]
+        Prescriptions[id.to_s+"freq4"] = prescribed_drug_frequency_hash[drug_name]
         count+=1
+      when 5
+        Prescriptions[id.to_s+"drug5"] = drug_name
+        Prescriptions[id.to_s+"dosage5"] = prescribed_drug_dosage_hash[drug_name]
+        Prescriptions[id.to_s+"freq5"] = prescribed_drug_frequency_hash[drug_name]
+        count+=1
+
     end
   end
 end
@@ -663,8 +686,8 @@ def self.create_art_encounter(visit_encounter_id, encounter)
       when 'WHOLE TABLETS REMAINING BUT NOT BROUGHT TO CLINIC'
         self.assign_drugs_counted_but_not_brought(enc, ob, drug_name_not_brought_to_clinic_count)
         drug_name_not_brought_to_clinic_count+=1
-      when 'PRESCRIPTION TIME PERIOD'
-        enc.prescription_duration = ob.value_text
+      #when 'PRESCRIPTION TIME PERIOD'
+       # enc.prescription_duration = ob.value_text
       when 'PRESCRIBE RECOMMENDED DOSAGE'
       when 'PRESCRIBED DOSE'
         drug_name = Drug.find(ob.value_drug).name
@@ -680,7 +703,7 @@ def self.create_art_encounter(visit_encounter_id, encounter)
         self.repeated_obs(enc, ob)
     end
     unless prescribed_drug_name_hash.blank?
-      self.assign_drugs_prescribed(enc, prescribed_drug_name_hash, prescribed_drug_dosage_hash, prescribed_drug_frequency_hash)
+      self.assign_drugs_prescribed(visit_encounter_id,enc, prescribed_drug_name_hash, prescribed_drug_dosage_hash, prescribed_drug_frequency_hash)
     end
   end
   self.drug_induced_symptom(enc) rescue nil
@@ -758,6 +781,8 @@ def self.repeated_obs(enc, ob)
       enc.vomit = self.get_concept(ob.value_coded)
     when 'WEIGHT LOSS'
       enc.weight_loss = self.get_concept(ob.value_coded)
+		when 'OTHER SYMPTOM'	
+			enc.other_symptoms = self.get_concept(ob.value_coded)
     when 'PERIPHERAL NEUROPATHY'
       enc.peripheral_neuropathy = self.get_concept(ob.value_coded)
     when 'HEPATITIS'
@@ -776,8 +801,8 @@ def self.repeated_obs(enc, ob)
       enc.refer_to_clinician = self.get_concept(ob.value_coded)
     when 'PRESCRIBE ARVS THIS VISIT'
       enc.prescribe_arv = self.get_concept(ob.value_coded)
-    when 'PRESCRIPTION TIME PERIOD'
-      enc.prescription_duration = self.get_concept(ob.value_coded)
+    #when 'PRESCRIPTION TIME PERIOD'
+     # enc.prescription_duration = self.get_concept(ob.value_coded)
     when 'ARV REGIMEN'
       enc.arv_regimen = self.get_concept(ob.value_coded)
     when 'PRESCRIBE COTRIMOXAZOLE (CPT)'
@@ -1009,8 +1034,8 @@ end
 
 def flush_give_drugs()
 
-  flush_queue(Give_drugs_queue, "give_drugs_encounters", ['visit_encounter_id', 'patient_id', 'drug_name1', 'dispensed_quantity1', 'drug_name2', 'dispensed_quantity2', 'drug_name3', 'dispensed_quantity3', 'drug_name4', 'dispensed_quantity4', 'drug_name5', 'dispensed_quantity5', 'voided', 'void_reason', 'date_voided', 'voided_by', 'date_created', 'creator'])
-
+ flush_queue(Give_drugs_queue, "give_drugs_encounters", ['visit_encounter_id', 'patient_id','pres_drug_name1','pres_dosage1','pres_frequency1','pres_drug_name2','pres_dosage2','pres_frequency2', 'pres_drug_name3','pres_dosage3','pres_frequency3','pres_drug_name4','pres_dosage4','pres_frequency4','pres_drug_name5', 'pres_dosage5','pres_frequency5','dispensed_drug_name1', 'dispensed_quantity1', 'dispensed_drug_name2', 'dispensed_quantity2', 'dispensed_drug_name3', 'dispensed_quantity3', 'dispensed_drug_name4', 'dispensed_quantity4', 'dispensed_drug_name5', 'dispensed_quantity5', 'voided', 'void_reason', 'date_voided', 'voided_by', 'date_created', 'creator'])
+ 	Prescriptions.clear()
 end
 
 
@@ -1022,7 +1047,7 @@ end
 
 def flush_art_visit()
 
-  flush_queue(Art_visit_queue, "art_visit_encounters", ['visit_encounter_id', 'patient_id', 'patient_pregnant', 'patient_breast_feeding', 'using_family_planning_method', 'family_planning_method_used', 'abdominal_pains', 'anorexia', 'cough', 'diarrhoea', 'fever', 'jaundice', 'leg_pain_numbness', 'vomit', 'weight_loss', 'peripheral_neuropathy', 'hepatitis', 'anaemia', 'lactic_acidosis', 'lipodystrophy', 'skin_rash', 'other_symptoms', 'drug_induced_Abdominal_pains', 'drug_induced_anorexia', 'drug_induced_diarrhoea', 'drug_induced_jaundice', 'drug_induced_leg_pain_numbness', 'drug_induced_vomit', 'drug_induced_peripheral_neuropathy', 'drug_induced_hepatitis', 'drug_induced_anaemia', 'drug_induced_lactic_acidosis', 'drug_induced_lipodystrophy', 'drug_induced_skin_rash', 'drug_induced_other_symptom', 'tb_status', 'refer_to_clinician', 'prescribe_arv', 'drug_name_brought_to_clinic1', 'drug_quantity_brought_to_clinic1', 'drug_left_at_home1', 'drug_name_brought_to_clinic2', 'drug_quantity_brought_to_clinic2', 'drug_left_at_home2', 'drug_name_brought_to_clinic3', 'drug_quantity_brought_to_clinic3', 'drug_left_at_home3', 'drug_name_brought_to_clinic4', 'drug_quantity_brought_to_clinic4', 'drug_left_at_home4', 'arv_regimen', 'drug1', 'dosage1', 'frequency1', 'drug2', 'dosage2', 'frequency2', 'drug3', 'dosage3', 'frequency3', 'drug4', 'dosage4', 'frequency4', 'prescription_duration', 'prescribe_cpt', 'number_of_condoms_given', 'depo_provera_given', 'continue_treatment_at_clinic', 'voided', 'void_reason', 'date_voided', 'voided_by', 'date_created', 'creator'])
+  flush_queue(Art_visit_queue, "art_visit_encounters", ['visit_encounter_id', 'patient_id', 'patient_pregnant', 'patient_breast_feeding', 'using_family_planning_method', 'family_planning_method_used', 'abdominal_pains', 'anorexia', 'cough', 'diarrhoea', 'fever', 'jaundice', 'leg_pain_numbness', 'vomit', 'weight_loss', 'peripheral_neuropathy', 'hepatitis', 'anaemia', 'lactic_acidosis', 'lipodystrophy', 'skin_rash', 'other_symptoms', 'drug_induced_Abdominal_pains', 'drug_induced_anorexia', 'drug_induced_diarrhoea', 'drug_induced_jaundice', 'drug_induced_leg_pain_numbness', 'drug_induced_vomit', 'drug_induced_peripheral_neuropathy', 'drug_induced_hepatitis', 'drug_induced_anaemia', 'drug_induced_lactic_acidosis', 'drug_induced_lipodystrophy', 'drug_induced_skin_rash', 'drug_induced_other_symptom', 'tb_status', 'refer_to_clinician', 'prescribe_arv', 'drug_name_brought_to_clinic1', 'drug_quantity_brought_to_clinic1', 'drug_left_at_home1', 'drug_name_brought_to_clinic2', 'drug_quantity_brought_to_clinic2', 'drug_left_at_home2', 'drug_name_brought_to_clinic3', 'drug_quantity_brought_to_clinic3', 'drug_left_at_home3', 'drug_name_brought_to_clinic4', 'drug_quantity_brought_to_clinic4', 'drug_left_at_home4', 'arv_regimen','prescribe_cpt', 'number_of_condoms_given', 'depo_provera_given', 'continue_treatment_at_clinic', 'voided', 'void_reason', 'date_voided', 'voided_by', 'date_created', 'creator'])
 
 end
 

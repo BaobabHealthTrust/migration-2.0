@@ -1,0 +1,17 @@
+INSERT INTO visit_encounters (id, patient_id, visit_date) VALUES (35, 4, '2009-06-30');
+INSERT INTO visit_encounters (id, patient_id, visit_date) VALUES (36, 4, '2004-10-25');
+INSERT INTO visit_encounters (id, patient_id, visit_date) VALUES (37, 4, '2010-08-20');
+INSERT INTO visit_encounters (id, patient_id, visit_date) VALUES (38, 4, '2010-08-26');
+INSERT INTO visit_encounters (id, patient_id, visit_date) VALUES (39, 4, '2010-09-02');
+INSERT INTO visit_encounters (id, patient_id, visit_date) VALUES (40, 4, '2010-09-08');
+INSERT INTO visit_encounters (id, patient_id, visit_date) VALUES (41, 4, '2010-09-16');
+INSERT INTO visit_encounters (id, patient_id, visit_date) VALUES (42, 4, '2010-10-22');
+INSERT INTO visit_encounters (id, patient_id, visit_date) VALUES (43, 4, '2010-11-19');
+INSERT INTO visit_encounters (id, patient_id, visit_date) VALUES (44, 4, '2010-11-22');
+INSERT INTO visit_encounters (id, patient_id, visit_date) VALUES (45, 4, '2010-07-26');
+INSERT INTO visit_encounters (id, patient_id, visit_date) VALUES (46, 4, '2010-11-30');
+INSERT INTO visit_encounters (id, patient_id, visit_date) VALUES (47, 4, '2010-12-10');
+INSERT INTO visit_encounters (id, patient_id, visit_date) VALUES (48, 4, '2010-12-24');
+INSERT INTO visit_encounters (id, patient_id, visit_date) VALUES (49, 4, '2011-02-03');
+INSERT INTO visit_encounters (id, patient_id, visit_date) VALUES (50, 4, '2004-10-24');
+INSERT INTO visit_encounters (id, patient_id, visit_date) VALUES (51, 4, '2008-01-04');
