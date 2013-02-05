@@ -11,7 +11,7 @@ ActiveRecord::Base.connection.execute <<EOF
 	`patient_id` int not null,
 	`agrees_to_follow_up` varchar(40),
 	`date_of_hiv_pos_test` date,
-	`date_of_hiv_pos_test_estimated` date,
+	`date_of_hiv_pos_test_estimated` tinyint(1) default 0,
 	`location_of_hiv_pos_test` varchar(255),
 	`arv_number_at_that_site` varchar(255),
 	`location_of_art_initiation` varchar(255),

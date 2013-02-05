@@ -62,7 +62,7 @@ def start
   elapsed = time_diff_milli t1, t2
   puts "Loaded concepts in #{elapsed}"
 
-  patients = Patient.find_by_sql("Select * from #{Source_db}.patient limit 10")
+  patients = Patient.find_by_sql("Select * from #{Source_db}.patient limit 1000")
   count = patients.length
   puts "Number of patients to be migrated #{count}"
 
