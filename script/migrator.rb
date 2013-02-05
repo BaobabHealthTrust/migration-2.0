@@ -9,12 +9,14 @@ Updateoutcome = EncounterType.find_by_name("Update outcome")
 Givedrug= EncounterType.find_by_name("Give Drugs")
 Preart = EncounterType.find_by_name("Pre ART visit")
 Height = Concept.find_by_name("Height")
+
 Concepts = Hash.new()
 Visit_encounter_hash = Hash.new()
 
 Use_queue = 1
 Output_sql = 1
-Execute_sql = 1
+Execute_sql = 0
+
 Patient_queue = Array.new
 Patient_queue_size = 1000
 Guardian_queue = Array.new
@@ -41,13 +43,13 @@ Source_db= YAML.load(File.open(File.join(RAILS_ROOT, "config/database.yml"), "r"
 
 CONN = ActiveRecord::Base.connection
 
+$missing_concept_errors=0
 
 def start
 
   $visit_encounter_id = 1
 
   started_at = Time.now.strftime("%Y-%m-%d-%H%M%S")
-
   if Output_sql == 1
     $visits_outfile = File.open("./migration_export_visits-" + started_at + ".sql", "w")
     $pat_encounters_outfile = File.open("./migration_export_pat_encounters-" + started_at + ".sql", "w")
@@ -62,7 +64,9 @@ def start
   elapsed = time_diff_milli t1, t2
   puts "Loaded concepts in #{elapsed}"
 
-  patients = Patient.find_by_sql("Select * from #{Source_db}.patient limit 1000")
+
+  patients = Patient.find_by_sql("Select * from #{Source_db}.patient limit 100")
+
   count = patients.length
   puts "Number of patients to be migrated #{count}"
 
@@ -84,25 +88,39 @@ def start
                 "HIV staging", "ART visit", "Update outcome",
                 "Give drugs", "Pre ART visit"]
 
-    enc_type.each do |enc_type|
-      pat_id = patient["patient_id"]
-      encounters = Encounter.find_by_sql("Select * from #{Source_db}.encounter where patient_id = #{pat_id} and encounter_type = #{self.get_encounter(enc_type)}")
-      puts("#{encounters.length} encounters of type #{enc_type} found")
-      encounters.each do |enc|
-        total_enc +=1
-        pat_enc +=1
-        visit_encounter_id = self.check_for_visitdate(pat_id, enc.encounter_datetime.to_date)
-        self.create_record(visit_encounter_id, enc)
-      end
+    pat_id = patient["patient_id"]
+    encounters = Encounter.find_by_sql("Select * from #{Source_db}.encounter where patient_id = #{pat_id}")
+
+    encounters.each do |enc|
+      total_enc +=1
+      pat_enc +=1
+      visit_encounter_id = self.check_for_visitdate(pat_id, enc.encounter_datetime.to_date)
+      self.create_record(visit_encounter_id, enc)
     end
+
+    #enc_type.each do |enc_type|
+    #  pat_id = patient["patient_id"]
+    #  encounters = Encounter.find_by_sql("Select * from #{Source_db}.encounter where patient_id = #{pat_id} and encounter_type = #{self.get_encounter(enc_type)}")
+    #  puts("#{encounters.length} encounters of type #{enc_type} found")
+    #  encounters.each do |enc|
+    #    total_enc +=1
+    #    pat_enc +=1
+    #    visit_encounter_id = self.check_for_visitdate(pat_id, enc.encounter_datetime.to_date)
+    #    self.create_record(visit_encounter_id, enc)
+    #  end
+    #end
+
+
     self.create_patient(patient)
     self.create_guardian(patient)
+
     pt2 = Time.now
     elapsed = time_diff_milli pt1, pt2
     eps = total_enc / elapsed
     puts "#{pat_enc} Encounters were processed in #{elapsed} for #{eps} eps"
-    puts "#{count-=1}................ Patient(s) to go"
+    puts "#{count-=1}................ patient(s) to go"
     pat_enc = 0
+
   end
 
   #Create system users
@@ -127,11 +145,11 @@ def start
   end
 
   puts "Finished at : #{Time.now}"
-  puts "#{total_enc} Encounters were processed"
   t2 = Time.now
   elapsed = time_diff_milli t1, t2
   eps = total_enc / elapsed
-  puts "#{total_enc} Encounters were processed in #{elapsed} for #{eps} eps"
+  puts "#{total_enc} Encounters were processed in #{elapsed} seconds for #{eps} eps"
+  puts "Encounters with missing concepts: " + $missing_concept_errors.to_s
 
 end
 
@@ -928,11 +946,17 @@ def self.drug_induced_symptom (enc)
 end
 
 def self.get_concept(id)
-  if Concepts[id] == nil
-    return Concept.find(id).name
-  else
-    return Concepts[id].name
-  end rescue Concept.find_by_name('Missing').id
+  begin
+    if Concepts[id] == nil
+      return Concept.find(id).name
+    else
+      return Concepts[id].name
+    end
+  rescue
+    $missing_concept_errors += 1
+    Concept.find_by_name('Missing').id
+  end
+
 end
 
 def preprocess_insert_val(val)
