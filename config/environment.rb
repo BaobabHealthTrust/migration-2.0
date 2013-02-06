@@ -59,6 +59,6 @@ Relationship.establish_connection(bart1_data)
 RelationshipType.establish_connection(bart1_data)
 User.establish_connection(bart1_data) 
 Location.establish_connection(bart1_data) 
-
+WeightHeightForAge.establish_connection(bart1_data) 
 
 # Settings in config/environments/* take precedence over those specified here.

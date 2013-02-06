@@ -65,7 +65,7 @@ def start
   puts "Loaded concepts in #{elapsed}"
 
 
-  patients = Patient.find_by_sql("Select * from #{Source_db}.patient limit 10")
+  patients = Patient.find_by_sql("Select * from #{Source_db}.patient limit 15")
 
   count = patients.length
   puts "Number of patients to be migrated #{count}"
@@ -95,7 +95,9 @@ def start
       total_enc +=1
       pat_enc +=1
       visit_encounter_id = self.check_for_visitdate(pat_id, enc.encounter_datetime.to_date)
-      self.create_record(visit_encounter_id, enc)
+      if !enc.encounter_type.blank?
+      	self.create_record(visit_encounter_id, enc)
+      end
     end
 
     #enc_type.each do |enc_type|
@@ -521,12 +523,16 @@ def self.create_vitals_record(visit_encounter_id, encounter)
   enc.visit_encounter_id = visit_encounter_id
   enc.date_created = encounter.date_created
   enc.creator = encounter.creator
+  details = WeightHeightForAge.new()
+  details.patient_height_weight_values(Patient.find(encounter.patient_id))
   (encounter.observations || []).each do |ob|
     case ob.concept.name.upcase
       when 'HEIGHT'
         enc.height = ob.value_numeric
+        
       when 'WEIGHT'
         enc.weight = ob.value_numeric
+        enc.weight_for_age = (enc.weight/(details.median_weight)*100).toFixed(0) rescue nil
     end
   end
   if enc.height == nil
@@ -535,6 +541,9 @@ def self.create_vitals_record(visit_encounter_id, encounter)
   else
     current_height = enc.height
   end
+  
+  enc.height_for_age = (current_height/(details.median_height)*100).toFixed(0) rescue nil
+  enc.weight_for_height = ((enc.weight/details.median_weight_height)*100).toFixed(0) rescue nil
   enc.bmi = (enc.weight/(current_height*current_height)*10000) rescue nil
 
   if  Use_queue > 0
@@ -729,8 +738,8 @@ def self.create_hiv_staging_encounter(visit_encounter_id, encounter)
   enc.visit_encounter_id = visit_encounter_id
   enc.date_created = encounter.date_created
   enc.creator = encounter.creator
-  enc.who_stage = PersonAttribute.find(:last, :conditions => ["person_id = ? 
-    AND person_attribute_type_id = ?", encounter.patient_id, whostage]).value rescue nil
+  enc.who_stage = "WHO stage "+PersonAttribute.find(:last, :conditions => ["person_id = ? 
+    AND person_attribute_type_id = ?", encounter.patient_id, whostage]).value.to_s rescue nil
   enc.reason_for_starting_art = PersonAttribute.find(:last,
                                                      :conditions => ["person_id = ? AND person_attribute_type_id = ?",
                                                                      encounter.patient_id, startreason]).value rescue nil
