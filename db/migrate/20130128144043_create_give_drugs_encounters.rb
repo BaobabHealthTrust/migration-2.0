@@ -25,6 +25,7 @@ create table `give_drugs_encounters`(
 `pres_drug_name5` varchar(255),
 `pres_dosage5` varchar(255),
 `pres_frequency5` varchar(255),
+`prescription_duration` varchar(255),
 `dispensed_drug_name1` varchar(255),
 `dispensed_quantity1` int,
 `dispensed_drug_name2` varchar(255),

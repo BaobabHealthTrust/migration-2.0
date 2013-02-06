@@ -65,7 +65,7 @@ def start
   puts "Loaded concepts in #{elapsed}"
 
 
-  patients = Patient.find_by_sql("Select * from #{Source_db}.patient limit 15")
+  patients = Patient.find_by_sql("Select * from #{Source_db}.patient limit 5000")
 
   count = patients.length
   puts "Number of patients to be migrated #{count}"
@@ -439,6 +439,7 @@ def self.create_give_drug_record(visit_encounter_id, encounter)
 	enc.pres_drug_name5 = Prescriptions[visit_encounter_id.to_s+"drug5"]
 	enc.pres_dosage5 = Prescriptions[visit_encounter_id.to_s+"dosage5"]
 	enc.pres_frequency5= Prescriptions[visit_encounter_id.to_s+"freq5"]
+	enc.prescription_duration = Prescriptions[visit_encounter_id.to_s+"pres_duration"].to_s rescue nil
   enc.creator = encounter.creator
   give_drugs_count = 1
   (encounter.orders || []).each do |order|
@@ -469,18 +470,28 @@ def self.assign_drugs_dispensed(encounter, drug_order, count)
     when 1
       encounter.dispensed_quantity1 = drug_order.quantity
       encounter.dispensed_drug_name1 = drug_order.drug.name
+     # encounter.disp_drug1_start_date = drug_order.start_date
+			#encounter.disp_drug1_auto_expiry_date = drug_order.auto_expire_date
     when 2
       encounter.dispensed_quantity2 = drug_order.quantity
       encounter.dispensed_drug_name2 = drug_order.drug.name
+      #encounter.disp_drug2_start_date = drug_order.start_date
+			#encounter.disp_drug2_auto_expiry_date = drug_order.auto_expire_date
     when 3
       encounter.dispensed_quantity3 = drug_order.quantity
       encounter.dispensed_drug_name3 = drug_order.drug.name
+      #encounter.disp_drug3_start_date = drug_order.start_date
+			#encounter.disp_drug3_auto_expiry_date = drug_order.auto_expire_date
     when 4
       encounter.dispensed_quantity4 = drug_order.quantity
       encounter.dispensed_drug_name4 = drug_order.drug.name
+      #encounter.disp_drug4_start_date = drug_order.start_date
+			#encounter.disp_drug4_auto_expiry_date = drug_order.auto_expire_date
     when 5
 		  encounter.dispensed_drug_name5 = drug_order.drug.name
       encounter.dispensed_quantity5 = drug_order.quantity
+      #encounter.disp_drug5_start_date = drug_order.start_date
+			#encounter.disp_drug5_auto_expiry_date = drug_order.auto_expire_date
   end
 
 end
@@ -697,7 +708,8 @@ def self.create_art_encounter(visit_encounter_id, encounter)
         drug_name_not_brought_to_clinic_count+=1
       #when 'PRESCRIPTION TIME PERIOD'
        # enc.prescription_duration = ob.value_text
-      when 'PRESCRIBE RECOMMENDED DOSAGE'
+      when 'PRESCRIPTION TIME PERIOD'
+        Prescriptions[visit_encounter_id.to_s+"pres_duration"] = ob.value_text
       when 'PRESCRIBED DOSE'
         drug_name = Drug.find(ob.value_drug).name
         if prescribed_drug_name_hash[drug_name].blank?
@@ -1043,7 +1055,7 @@ end
 
 def flush_give_drugs()
 
- flush_queue(Give_drugs_queue, "give_drugs_encounters", ['visit_encounter_id', 'patient_id','pres_drug_name1','pres_dosage1','pres_frequency1','pres_drug_name2','pres_dosage2','pres_frequency2', 'pres_drug_name3','pres_dosage3','pres_frequency3','pres_drug_name4','pres_dosage4','pres_frequency4','pres_drug_name5', 'pres_dosage5','pres_frequency5','dispensed_drug_name1', 'dispensed_quantity1', 'dispensed_drug_name2', 'dispensed_quantity2', 'dispensed_drug_name3', 'dispensed_quantity3', 'dispensed_drug_name4', 'dispensed_quantity4', 'dispensed_drug_name5', 'dispensed_quantity5', 'voided', 'void_reason', 'date_voided', 'voided_by', 'date_created', 'creator'])
+ flush_queue(Give_drugs_queue, "give_drugs_encounters", ['visit_encounter_id', 'patient_id','pres_drug_name1','pres_dosage1','pres_frequency1','pres_drug_name2','pres_dosage2','pres_frequency2', 'pres_drug_name3','pres_dosage3','pres_frequency3','pres_drug_name4','pres_dosage4','pres_frequency4','pres_drug_name5', 'pres_dosage5','pres_frequency5','prescription_duration','dispensed_drug_name1', 'dispensed_quantity1', 'dispensed_drug_name2', 'dispensed_quantity2', 'dispensed_drug_name3', 'dispensed_quantity3', 'dispensed_drug_name4', 'dispensed_quantity4', 'dispensed_drug_name5', 'dispensed_quantity5', 'voided', 'void_reason', 'date_voided', 'voided_by', 'date_created', 'creator'])
  	Prescriptions.clear()
 end
 
