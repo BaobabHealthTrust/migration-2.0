@@ -12,6 +12,7 @@ create table `outcome_encounters`(
 `state` varchar(255),
 `outcome_date` date ,
 `transferred_out_location` varchar(255),
+`location` varchar(255),
 `voided` int not null default 0,
 `void_reason` varchar(255),
 `date_voided` date,

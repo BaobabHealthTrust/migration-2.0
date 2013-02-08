@@ -16,6 +16,7 @@ create table `vitals_encounters`(
 `weight_for_age` float,
 `height_for_age` float,
 `weight_for_height` float,
+`location` varchar(255),
 `voided` tinyint(1) not null default 0,
 `void_reason` varchar(255),
 `date_voided` date default null,

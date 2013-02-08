@@ -49,6 +49,7 @@ ActiveRecord::Base.connection.execute <<EOF
 `number_of_condoms_given` int ,
 `prescribe_ipt` varchar(25),
 `date_created` datetime default null,
+`location` varchar(255),
 `creator` int(11)
 
 	);

@@ -1,17 +1,16 @@
-class CreateHivReceptionEncounters < ActiveRecord::Migration
+class CreateGeneralReceptionEncounters < ActiveRecord::Migration
   def self.up
+
 ActiveRecord::Base.connection.execute <<EOF
-	DROP TABLE IF EXISTS `hiv_reception_encounters`;		
+ 	DROP TABLE IF EXISTS `general_reception_encounters`;		
 EOF
 
 ActiveRecord::Base.connection.execute <<EOF
-create table `hiv_reception_encounters`(
+create table `general_reception_encounters`(
 `id` int not null auto_increment primary key,
 `visit_encounter_id` int not null,
 `patient_id` int not null,
-`guardian` int,
 `patient_present` varchar(255),
-`guardian_present` varchar(255),
 `location` varchar(255),
 `voided` tinyint(1) not null default 0,
 `void_reason` varchar(255),
@@ -19,12 +18,13 @@ create table `hiv_reception_encounters`(
 `voided_by` int(11),
 `date_created` datetime default null,
 `creator` int(11)
-);
 
+);
 EOF
+
   end
 
   def self.down
-    drop_table :hiv_reception_encounters
+    drop_table :general_reception_encounters
   end
 end

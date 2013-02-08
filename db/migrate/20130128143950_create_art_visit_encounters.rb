@@ -62,6 +62,7 @@ create table `art_visit_encounters` (
 `number_of_condoms_given` int,
 `depo_provera_given` varchar(25),
 `continue_treatment_at_clinic` varchar(25),
+`location` varchar(255),
 `voided` tinyint(1) not null default 0,
 `void_reason` varchar(255),
 `date_voided` date default null,

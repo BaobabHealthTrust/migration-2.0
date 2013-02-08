@@ -25,6 +25,7 @@ ActiveRecord::Base.connection.execute <<EOF
 	`last_arv_regimen` varchar(255),  
 	`date_last_arv_taken` date,
 	`date_last_arv_taken_estimated` date,
+	`location` varchar(255),
 	`voided` tinyint(1) NOT NULL default 0,
 	`void_reason` varchar(255),
 	`date_voided` date,

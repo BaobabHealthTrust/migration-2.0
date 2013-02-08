@@ -70,6 +70,7 @@ create table `hiv_staging_encounters`(
 `recto_vaginal_fitsula` varchar(25),
 `reason_for_starting_art` varchar(25),
 `who_stage` varchar(255),
+`location` varchar(255),
 `voided` tinyint(1) not null default 0,
 `void_reason` varchar(255), 
 `date_voided` date,
