@@ -1,6 +1,8 @@
 *.swp
 *.swo
 *.log
+*.sql
+*.tar.gz
 config/database.yml
 config/application.yml
 config/settings.yml
