@@ -1,4 +1,6 @@
 
+require 'script/thread-pool.rb'
+
 Hivfirst = EncounterType.find_by_name("HIV first visit")
 Hivrecp = EncounterType.find_by_name("HIV Reception")
 Artvisit = EncounterType.find_by_name("ART visit")
@@ -72,7 +74,7 @@ def start
   puts "Loaded concepts in #{elapsed}"
 
 
-  patients = Patient.find_by_sql("Select * from #{Source_db}.patient where patient_id > 20000  limit 5000")
+  patients = Patient.find_by_sql("Select * from #{Source_db}.patient where patient_id > 25000  limit 100")
 
   count = patients.length
   puts "Number of patients to be migrated #{count}"
@@ -88,49 +90,48 @@ def start
     $pat_encounters_outfile = File.open("./migration_export_pat_encounters-" + started_at + ".sql", "w")
   end
 
+  p = Pool.new(4)
+
+
   patients.each do |patient|
-    puts "Working on patient with ID: #{patient.id}"
-    pt1 = Time.now
-    enc_type = ["HIV Reception", "HIV first visit","General Reception","Outpatient diagnosis", "Height/Weight",
-                "HIV staging", "ART visit", "Update outcome",
-                "Give drugs", "Pre ART visit"]
 
-    pat_id = patient["patient_id"]
-    encounters = Encounter.find_by_sql("Select * from #{Source_db}.encounter where patient_id = #{pat_id}")
+    p.schedule do
 
-    encounters.each do |enc|
-      total_enc +=1
-      pat_enc +=1
-      visit_encounter_id = self.check_for_visitdate(pat_id, enc.encounter_datetime.to_date)
-      if !enc.encounter_type.blank?
-      	self.create_record(visit_encounter_id, enc)
+      status = "Working on patient with ID: #{patient.id}\n"
+      pt1 = Time.now
+      enc_type = ["HIV Reception", "HIV first visit", "General Reception", "Outpatient diagnosis", "Height/Weight",
+                  "HIV staging", "ART visit", "Update outcome",
+                  "Give drugs", "Pre ART visit"]
+
+      pat_id = patient["patient_id"]
+      encounters = Encounter.find_by_sql("Select * from #{Source_db}.encounter where patient_id = #{pat_id}")
+
+      encounters.each do |enc|
+        total_enc +=1
+        pat_enc +=1
+        visit_encounter_id = self.check_for_visitdate(pat_id, enc.encounter_datetime.to_date)
+        if !enc.encounter_type.blank?
+          self.create_record(visit_encounter_id, enc)
+        end
       end
+
+
+      self.create_patient(patient)
+      self.create_guardian(patient)
+
+      pt2 = Time.now
+      elapsed = time_diff_milli pt1, pt2
+      eps = total_enc / elapsed
+      status += "#{pat_enc} Encounters were processed in #{elapsed} for #{eps} eps\n"
+      status += "#{count-=1}................ patient(s) to go\n"
+      pat_enc = 0
+
+      puts status
     end
 
-    #enc_type.each do |enc_type|
-    #  pat_id = patient["patient_id"]
-    #  encounters = Encounter.find_by_sql("Select * from #{Source_db}.encounter where patient_id = #{pat_id} and encounter_type = #{self.get_encounter(enc_type)}")
-    #  puts("#{encounters.length} encounters of type #{enc_type} found")
-    #  encounters.each do |enc|
-    #    total_enc +=1
-    #    pat_enc +=1
-    #    visit_encounter_id = self.check_for_visitdate(pat_id, enc.encounter_datetime.to_date)
-    #    self.create_record(visit_encounter_id, enc)
-    #  end
-    #end
-
-
-    self.create_patient(patient)
-    self.create_guardian(patient)
-
-    pt2 = Time.now
-    elapsed = time_diff_milli pt1, pt2
-    eps = total_enc / elapsed
-    puts "#{pat_enc} Encounters were processed in #{elapsed} for #{eps} eps"
-    puts "#{count-=1}................ patient(s) to go"
-    pat_enc = 0
-	
   end
+
+  p.shutdown
 
   #Create system users
   self.create_users()
