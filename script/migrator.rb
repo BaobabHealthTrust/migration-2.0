@@ -109,18 +109,6 @@ def start
       end
     end
 
-    #enc_type.each do |enc_type|
-    #  pat_id = patient["patient_id"]
-    #  encounters = Encounter.find_by_sql("Select * from #{Source_db}.encounter where patient_id = #{pat_id} and encounter_type = #{self.get_encounter(enc_type)}")
-    #  puts("#{encounters.length} encounters of type #{enc_type} found")
-    #  encounters.each do |enc|
-    #    total_enc +=1
-    #    pat_enc +=1
-    #    visit_encounter_id = self.check_for_visitdate(pat_id, enc.encounter_datetime.to_date)
-    #    self.create_record(visit_encounter_id, enc)
-    #  end
-    #end
-
 
     self.create_patient(patient)
     self.create_guardian(patient)
