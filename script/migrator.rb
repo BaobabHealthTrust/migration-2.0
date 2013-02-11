@@ -60,6 +60,7 @@ def start
   if Output_sql == 1
     $visits_outfile = File.open("./migration_export_visits-" + started_at + ".sql", "w")
     $pat_encounters_outfile = File.open("./migration_export_pat_encounters-" + started_at + ".sql", "w")
+    $duplicates_outfile = File.open("./duplicates.txt", "w")
   end
 
   puts "Started at : #{Time.now}"
@@ -72,7 +73,7 @@ def start
   puts "Loaded concepts in #{elapsed}"
 
 
-  patients = Patient.find_by_sql("Select * from #{Source_db}.patient where patient_id > 20000  limit 5000")
+  patients = Patient.find_by_sql("Select * from #{Source_db}.patient ")
 
   count = patients.length
   puts "Number of patients to be migrated #{count}"
@@ -89,6 +90,7 @@ def start
   end
 
   patients.each do |patient|
+  	$migratedencs = Hash.new(false)
     puts "Working on patient with ID: #{patient.id}"
     pt1 = Time.now
     enc_type = ["HIV Reception", "HIV first visit","General Reception","Outpatient diagnosis", "Height/Weight",
@@ -96,7 +98,7 @@ def start
                 "Give drugs", "Pre ART visit"]
 
     pat_id = patient["patient_id"]
-    encounters = Encounter.find_by_sql("Select * from #{Source_db}.encounter where patient_id = #{pat_id}")
+    encounters = Encounter.find_by_sql("Select * from #{Source_db}.encounter where patient_id = #{pat_id} order by encounter_datetime desc")
 
     encounters.each do |enc|
       total_enc +=1
@@ -156,6 +158,7 @@ def start
     $pat_encounters_outfile.close()
   end
 
+  $duplicates_outfile.close()
   puts "Finished at : #{Time.now}"
   t2 = Time.now
   elapsed = time_diff_milli t1, t2
@@ -423,17 +426,21 @@ def self.create_hiv_first_visit(visit_encounter_id, encounter)
   end
 
   # check if we are to utilize the queue
-  if Use_queue > 0
-    if Hiv_first_visit_queue[Hiv_first_visit_size-1] == nil
-      Hiv_first_visit_queue << enc
-    else
-      flush_hiv_first_visit()
-      Hiv_first_visit_queue << enc
-    end
-  else
-    enc.save
-  end
-
+	if $migratedencs[visit_encounter_id.to_s+"first_visit"] == false
+		if Use_queue > 0
+		  if Hiv_first_visit_queue[Hiv_first_visit_size-1] == nil
+		    Hiv_first_visit_queue << enc
+		  else
+		    flush_hiv_first_visit()
+		    Hiv_first_visit_queue << enc
+		  end
+		else
+		  enc.save
+		end
+		$migratedencs[visit_encounter_id.to_s+"first_visit"] = true
+	else
+    $duplicates_outfile << "Enc_id: #{encounter.id}, Pat_id: #{encounter.patient_id}, Enc_type: Hiv first visit \n"
+	end
 
 end
 
@@ -471,16 +478,23 @@ def self.create_give_drug_record(visit_encounter_id, encounter)
 
 
   # check if we are to utilize the queue
-  if Use_queue > 0
-    if Give_drugs_queue[Give_drugs_size-1] == nil
-      Give_drugs_queue << enc
-    else
-      flush_give_drugs()
-      Give_drugs_queue << enc
-    end
-  else
-    enc.save
-  end
+  if $migratedencs[visit_encounter_id.to_s+"give_drugs"] == false
+		if Use_queue > 0
+		  if Give_drugs_queue[Give_drugs_size-1] == nil
+		    Give_drugs_queue << enc
+		  else
+		    flush_give_drugs()
+		    Give_drugs_queue << enc
+		  end
+		else
+		  enc.save
+		end
+		
+		$migratedencs[visit_encounter_id.to_s+"give_drugs"] = true
+		
+	else
+	    $duplicates_outfile << "Enc_id: #{encounter.id}, Pat_id: #{encounter.patient_id}, Enc_type: Give drugs \n"
+	end
 
 end
 
@@ -535,17 +549,24 @@ def self.create_update_outcome(visit_encounter_id, encounter)
     end
   end
 
-  if Use_queue > 0
-    if Update_outcome_queue[Update_outcome_size-1] == nil
-      Update_outcome_queue << enc
-    else
-      flush_update_outcome()
-      Update_outcome_queue << enc
-    end
-  else
-    enc.save()
-  end
-
+	if $migratedencs[visit_encounter_id.to_s+"outcome_enc"] == false
+		if Use_queue > 0
+		  if Update_outcome_queue[Update_outcome_size-1] == nil
+		    Update_outcome_queue << enc
+		  else
+		    flush_update_outcome()
+		    Update_outcome_queue << enc
+		  end
+		else
+		  enc.save()
+		end
+		
+		$migratedencs[visit_encounter_id.to_s+"outcome_enc"] = true
+		
+	else
+	    $duplicates_outfile << "Enc_id: #{encounter.id}, Pat_id: #{encounter.patient_id}, Enc_type: Update Outcome \n"
+	end
+	
 end
 
 def self.create_vitals_record(visit_encounter_id, encounter)
@@ -579,19 +600,27 @@ def self.create_vitals_record(visit_encounter_id, encounter)
   enc.weight_for_height = ((enc.weight/details.median_weight_height)*100).toFixed(0) rescue nil
   enc.bmi = (enc.weight/(current_height*current_height)*10000) rescue nil
 
-  if  Use_queue > 0
-    if Height_weight_queue[Height_weight_size-1] == nil
-      Height_weight_queue << enc
-    else
-      flush_height_weight_queue()
-      Height_weight_queue << enc
-    end
-  else
-    enc.save()
-  end
+	if $migratedencs[visit_encounter_id.to_s+"vitals"] == false
+		if  Use_queue > 0
+		  if Height_weight_queue[Height_weight_size-1] == nil
+		    Height_weight_queue << enc
+		  else
+		    flush_height_weight_queue()
+		    Height_weight_queue << enc
+		  end
+		else
+		  enc.save()
+		end
+	 $migratedencs[visit_encounter_id.to_s+"vitals"] = true
+
+	else
+	    $duplicates_outfile << "Enc_id: #{encounter.id}, Pat_id: #{encounter.patient_id}, Enc_type: Vitals \n"
+	end
+
 end
 
 def self.create_hiv_reception_record(visit_encounter_id, encounter)
+
   enc = HivReceptionEncounter.new()
   enc.patient_id = encounter.patient_id
   enc.visit_encounter_id = visit_encounter_id
@@ -608,17 +637,26 @@ def self.create_hiv_reception_record(visit_encounter_id, encounter)
     end
 
   end
-  if Use_queue > 0
-    if Hiv_reception_queue[Hiv_reception_size-1] == nil
-      Hiv_reception_queue << enc
-    else
-      flush_hiv_reception()
-      Hiv_reception_queue << enc
-    end
-  else
-    enc.save()
-  end
 
+	if $migratedencs[visit_encounter_id.to_s+"hiv_reception"] == false
+
+		if Use_queue > 0
+		  if Hiv_reception_queue[Hiv_reception_size-1] == nil
+		    Hiv_reception_queue << enc
+		  else
+		    flush_hiv_reception()
+		    Hiv_reception_queue << enc
+		  end
+		else
+		  enc.save()
+		end
+		
+		$migratedencs[visit_encounter_id.to_s+"hiv_reception"] = true
+		
+	else
+	    $duplicates_outfile << "Enc_id: #{encounter.id}, Pat_id: #{encounter.patient_id}, Enc_type: Hiv reception \n"
+	end
+	
 end
 
 def self.create_pre_art_record(visit_encounter_id, encounter)
@@ -633,16 +671,24 @@ def self.create_pre_art_record(visit_encounter_id, encounter)
   end
   drug_induced_symptom (enc) rescue nil
 
-  if Use_queue > 0
-    if Pre_art_visit_queue[Pre_art_visit_size-1] == nil
-      Pre_art_visit_queue << enc
-    else
-      flush_pre_art_visit_queue()
-      Pre_art_visit_queue << enc
-    end
-  else
-    enc.save()
-  end
+	if $migratedencs[visit_encounter_id.to_s+"pre_art"] == false
+
+		if Use_queue > 0
+		  if Pre_art_visit_queue[Pre_art_visit_size-1] == nil
+		    Pre_art_visit_queue << enc
+		  else
+		    flush_pre_art_visit_queue()
+		    Pre_art_visit_queue << enc
+		  end
+		else
+		  enc.save()
+		end
+		
+		$migratedencs[visit_encounter_id.to_s+"pre_art"] = true
+		
+	else
+    $duplicates_outfile << "Enc_id: #{encounter.id}, Pat_id: #{encounter.patient_id}, Enc_type: Pre ART visit \n"
+	end
 
 end
 
@@ -711,6 +757,7 @@ def self.assign_drugs_counted_but_not_brought(encounter, obs, count)
 end
 
 def self.create_art_encounter(visit_encounter_id, encounter)
+
   enc = ArtVisitEncounter.new()
   enc.patient_id = encounter.patient_id
   enc.visit_encounter_id = visit_encounter_id
@@ -753,17 +800,24 @@ def self.create_art_encounter(visit_encounter_id, encounter)
   end
   self.drug_induced_symptom(enc) rescue nil
 
-  if Use_queue > 0
-    if Art_visit_queue[Art_visit_size-1] == nil
-      Art_visit_queue << enc
-    else
-      flush_art_visit()
-      Art_visit_queue << enc
-    end
-  else
-    enc.save()
-  end
-
+	if $migratedencs[visit_encounter_id.to_s+"art"] == false
+		if Use_queue > 0
+		  if Art_visit_queue[Art_visit_size-1] == nil
+		    Art_visit_queue << enc
+		  else
+		    flush_art_visit()
+		    Art_visit_queue << enc
+		  end
+		else
+		  enc.save()
+		end
+		
+		$migratedencs[visit_encounter_id.to_s+"art"] = true
+		
+	else
+    $duplicates_outfile << "Enc_id: #{encounter.id}, Pat_id: #{encounter.patient_id}, Enc_type: ART visit \n"	
+	end
+	
 end
 
 def self.create_outpatient_diag_encounter(visit_encounter_id, encounter)
@@ -787,17 +841,25 @@ def self.create_outpatient_diag_encounter(visit_encounter_id, encounter)
     end
 	end
 
-  if Use_queue > 0
-    if Outpatient_diagnosis_queue[Outpatient_diag_size-1] == nil
-      Outpatient_diagnosis_queue << enc
-    else
-      flush_outpatient_diag()
-      Outpatient_diagnosis_queue << enc
-    end
-  else
-    enc.save()
-  end
-
+	if $migratedencs[visit_encounter_id.to_s+"opd"] == false
+	
+		if Use_queue > 0
+		  if Outpatient_diagnosis_queue[Outpatient_diag_size-1] == nil
+		    Outpatient_diagnosis_queue << enc
+		  else
+		    flush_outpatient_diag()
+		    Outpatient_diagnosis_queue << enc
+		  end
+		else
+		  enc.save()
+		end
+		
+		$migratedencs[visit_encounter_id.to_s+"opd"] = true
+		
+	else
+	    $duplicates_outfile << "Enc_id: #{encounter.id}, Pat_id: #{encounter.patient_id}, Enc_type: Outpatient Diagnosis \n"
+	end
+	
 end
 
 def self.create_general_encounter(visit_encounter_id, encounter)
@@ -816,21 +878,30 @@ def self.create_general_encounter(visit_encounter_id, encounter)
     end
 	end
 
-  if Use_queue > 0
-    if General_reception_queue[General_reception_size-1] == nil
-      General_reception_queue << enc
-    else
-      flush_general_recep()
-      General_reception_queue << enc
-    end
-  else
-    enc.save()
-  end
-
+	if $migratedencs[visit_encounter_id.to_s+"general_recp"] == false
+	
+		if Use_queue > 0
+		  if General_reception_queue[General_reception_size-1] == nil
+		    General_reception_queue << enc
+		  else
+		    flush_general_recep()
+		    General_reception_queue << enc
+		  end
+		else
+		  enc.save()
+		end
+		
+		$migratedencs[visit_encounter_id.to_s+"general_recp"] = true
+		
+	else
+	    $duplicates_outfile << "Enc_id: #{encounter.id}, Pat_id: #{encounter.patient_id}, Enc_type: General Reception \n"
+	end
+	
 end
 
 
 def self.create_hiv_staging_encounter(visit_encounter_id, encounter)
+
   startreason = PersonAttributeType.find_by_name("reason antiretrovirals started").person_attribute_type_id
   whostage = PersonAttributeType.find_by_name("WHO stage").person_attribute_type_id
   enc = HivStagingEncounter.new()
@@ -848,17 +919,24 @@ def self.create_hiv_staging_encounter(visit_encounter_id, encounter)
     self.repeated_obs(enc, ob)
   end
 
-  if Use_queue > 0
-    if Hiv_staging_queue[Hiv_stage_size-1] == nil
-      Hiv_staging_queue << enc
-    else
-      flush_hiv_staging()
-      Hiv_staging_queue << enc
-    end
-  else
-    enc.save()
-  end
-
+	if $migratedencs[visit_encounter_id.to_s+"hiv_staging"] == false
+		
+		if Use_queue > 0
+		  if Hiv_staging_queue[Hiv_stage_size-1] == nil
+		    Hiv_staging_queue << enc
+		  else
+		    flush_hiv_staging()
+		    Hiv_staging_queue << enc
+		  end
+		else
+		  enc.save()
+		end
+		
+		$migratedencs[visit_encounter_id.to_s+"hiv_staging"] = true
+		
+	else
+	    $duplicates_outfile << "Enc_id: #{encounter.id}, Pat_id: #{encounter.patient_id}, Enc_type: HIV Staging \n"
+	end
 
 end
 
