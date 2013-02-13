@@ -2,7 +2,9 @@
 *.swo
 *.log
 *.sql
+*.tar
 *.tar.gz
+duplicates.txt
 config/database.yml
 config/application.yml
 config/settings.yml

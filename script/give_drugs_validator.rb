@@ -4,7 +4,7 @@ def validate
 	$incompletes = 0
 	$incomplete_details = []
 	
-	encounters = GiveDrugsEncounter.find_by_sql("Select * from give_drug_encounters")
+	encounters = GiveDrugsEncounter.find_by_sql("Select * from give_drugs_encounters")
 	
 	encounters.each do |enc|
 	

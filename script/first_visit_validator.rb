@@ -32,7 +32,7 @@ def validate
 			if enc.date_last_arv_taken.blank?
 				$incomplete_details << ["Visit ID: #{enc.id}, Visit Encounter ID: #{enc.visit_encounter_id}, Patient ID: #{enc.patient_id}", " Missing last date ARV taken"]
 				$incompletes +=1
-			elsif enc.date_last_arv_taken.upcase == "UNKNOWN" && enc.taken_arvs_in_last_two_month.blank?
+			elsif enc.date_last_arv_taken.to_s.upcase == "UNKNOWN" && enc.taken_arvs_in_last_two_month.blank?
 				$incomplete_details << ["Visit ID: #{enc.id}, Visit Encounter ID: #{enc.visit_encounter_id}, Patient ID: #{enc.patient_id}", " Missing estimated last date ARV taken"]
 				$incompletes +=1				
 			end
