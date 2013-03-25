@@ -8,6 +8,7 @@ ActiveRecord::Base.connection.execute <<EOF
  CREATE table `first_visit_encounters`(
  	`id` int not null auto_increment primary key,
 	`visit_encounter_id` int not null, 
+	`old_enc_id` int not null,
 	`patient_id` int not null,
 	`agrees_to_follow_up` varchar(40),
 	`date_of_hiv_pos_test` date,

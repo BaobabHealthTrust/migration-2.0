@@ -8,10 +8,11 @@ ActiveRecord::Base.connection.execute <<EOF
 create table `art_visit_encounters` (
 `id` int not null auto_increment primary key,
 `visit_encounter_id` int not null,
+`old_enc_id` int not null,
 `patient_id` int not null,
 `patient_pregnant` varchar(25),
 `patient_breast_feeding` varchar(25),
-`using_family_planning_method` varchar(25), 
+`using_family_planning_method` varchar(25),
 `family_planning_method_used` varchar(25),
 `abdominal_pains` varchar(25),
 `anorexia` varchar(25),

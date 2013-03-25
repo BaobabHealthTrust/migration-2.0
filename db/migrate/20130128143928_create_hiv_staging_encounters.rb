@@ -9,6 +9,7 @@ ActiveRecord::Base.connection.execute <<EOF
 create table `hiv_staging_encounters`(
 `id` int auto_increment not null primary key,
 `visit_encounter_id` int not null,
+`old_enc_id` int not null,
 `patient_id` int not null,
 `patient_pregnant` varchar(25) ,
 `patient_breast_feeding` varchar(25),
