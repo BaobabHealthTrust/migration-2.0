@@ -77,7 +77,7 @@ def start
   puts "Loaded concepts in #{elapsed}"
 
 
-  patients = Patient.find_by_sql("Select * from #{Source_db}.patient where voided = 0 and patient_id > 174002 limit 40000")
+  patients = Patient.find_by_sql("Select * from #{Source_db}.patient where voided = 0 limit 40")
 
   count = patients.length
   puts "Number of patients to be migrated #{count}"
@@ -355,6 +355,8 @@ def self.get_patient_identifiers(pat_id)
 			when 'OFFICE PHONE NUMBER'
 				pat_identifiers["office_phone"] = id.identifier
 			when 'ART NUMBER'
+				pat_identifiers["art_number"] = id.identifier
+			when 'ARV NATIONAL ID'
 				pat_identifiers["art_number"] = id.identifier
 			when 'PREVIOUS ART NUMBER'
 				pat_identifiers["prev_art_number"] = id.identifier
