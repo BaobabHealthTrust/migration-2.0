@@ -77,7 +77,7 @@ def start
   puts "Loaded concepts in #{elapsed}"
 
 
-  patients = Patient.find_by_sql("Select * from #{Source_db}.patient where voided = 0 limit 40")
+  patients = Patient.find_by_sql("Select * from #{Source_db}.patient where voided = 0 ")
 
   count = patients.length
   puts "Number of patients to be migrated #{count}"
