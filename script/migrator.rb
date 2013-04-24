@@ -77,7 +77,7 @@ def start
   puts "Loaded concepts in #{elapsed}"
 
 
-  patients = Patient.find_by_sql("Select * from #{Source_db}.patient where voided = 0 ")
+  patients = Patient.find_by_sql("Select * from #{Source_db}.patient where voided = 0 limit 10 ")
 
   count = patients.length
   puts "Number of patients to be migrated #{count}"
@@ -165,7 +165,7 @@ def start
 
 	encounter_tables.each do |enc_type|
 		puts "Encounter type : #{enc_type}"
-		patients = Patient.find_by_sql("select patient_id from migrator.#{enc_type} where patient_id not in(select patient_id from migrator.patients)")
+		patients = PatientRecord.find_by_sql("select patient_id from #{enc_type} where patient_id not in (select patient_id from patients)")
 		puts "#{patients.length} will be created"
 		patients.each do |patient|
 			self.create_patient(Patient.find(patient))
