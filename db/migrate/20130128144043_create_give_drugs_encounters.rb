@@ -37,6 +37,7 @@ create table `give_drugs_encounters`(
 `dispensed_quantity4` int,
 `dispensed_drug_name5` varchar(255),
 `dispensed_quantity5` int,
+`appointment_date` datetime,
 `location` varchar(255),
 `voided` tinyint(1) not null default 0,
 `void_reason` varchar(255),
