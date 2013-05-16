@@ -271,7 +271,7 @@ def self.create_patient(pat)
   patient.dob = pat.birthdate
   patient.dob_estimated = pat.birthdate_estimated
   patient.traditional_authority = ids["ta"]
-#	current_address = ids["ta"]
+	current_address = PatientAddress.find(:last, :conditions => ["patient_id = ? AND voided = 0", pat.id]) rescue nil
 #	landmark= 
   patient.cellphone_number= ids["cell"]
   patient.home_phone_number= ids["home_phone"]
