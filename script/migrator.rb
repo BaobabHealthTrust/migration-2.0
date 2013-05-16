@@ -1135,7 +1135,7 @@ def self.repeated_obs(enc, ob)
       enc.fever_persistent_unexplained = self.get_concept(ob.value_coded)
     when 'PULMONARY TUBERCULOSIS (CURRENT)'
       enc.pulmonary_tuberculosis = self.get_concept(ob.value_coded)
-    when 'PULMONARY TUBERCULOSIS WITHIN THE last 2 YEARS'
+    when 'PULMONARY TUBERCULOSIS WITHIN THE LAST 2 YEARS'
       enc.pulmonary_tuberculosis_last_2_years = self.get_concept(ob.value_coded)
     when 'SEVERE BACTERIAL INFECTIONS (PNEUMONIA, EMPYEMA, PYOMYOSITIS, BONE/JOINT, MENINGITIS, BACTERAEMIA)'
       enc.severe_bacterial_infection = self.get_concept(ob.value_coded)
