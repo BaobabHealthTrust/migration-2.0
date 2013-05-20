@@ -2,9 +2,10 @@ Migration-2.0
 
 Getting started 
 
-1. Change database settings in config/database.yml to your specifications. Source database is the database you want to migrate and the details are under bart. 
+1. Change database settings in config/database.yml to your specifications.
+   - under bart2: enter the details of your Source database. (This is the database you want to export from. The OpenMRS 1.1 dataset).
 
-2. Run rake db:create RAILS_ENV=['environment for execution'] eg  rake db:create RAILS_ENV='development' to creat database to keep migrated data.
+2. Run rake db:create RAILS_ENV=['environment for execution'] eg  rake db:create RAILS_ENV='development' to create database to keep the exported data. This is the database which will hold 12/14 flat tables.
 
 3. If database has been succesfully created, run rake db:migrate to create the tables and relations.
 
