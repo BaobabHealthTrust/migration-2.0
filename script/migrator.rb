@@ -78,7 +78,6 @@ def start
   elapsed = time_diff_milli t1, t2
   puts "Loaded concepts in #{elapsed}"
 
-
   patients = Patient.find_by_sql("Select * from #{Source_db}.patient where voided = 0")
   patient_ids = patients.map{|p| p.patient_id}
   pat_ids =  [0] if patient_ids.blank?
@@ -224,7 +223,6 @@ def self.get_encounter(type)
   end
 end
 
-
 def self.check_for_visitdate(patient_id, encounter_date)
   # check if we have seen this patient visit and return the visit encounter id if we have
   if Visit_encounter_hash["#{patient_id}#{encounter_date}"] != nil
@@ -287,8 +285,7 @@ def self.create_patient(pat)
   patient.dob = pat.birthdate
   patient.dob_estimated = pat.birthdate_estimated
   patient.traditional_authority = ids["ta"]
-	current_address = PatientAddress.find(:last, :conditions => ["patient_id = ? AND voided = 0", pat.id]) rescue nil
-#	landmark= 
+	patient.current_address =  PatientAddress.find_by_sql("select city_village from #{Source_db}.patient_address where patient_id = #{pat.id} and voided = 0 limit 1").map{|p| p.city_village}
   patient.cellphone_number= ids["cell"]
   patient.home_phone_number= ids["home_phone"]
   patient.office_phone_number= ids["office_phone"]
@@ -298,9 +295,6 @@ def self.create_patient(pat)
   patient.art_number= ids["art_number"]
   patient.pre_art_number= ids["pre_arv_number"]
   patient.tb_number= ids["tb_id"]
-#legacy_id
-#legacy_id2
-#legacy_id3
   patient.new_nat_id= ids["new_nat_id"]
   patient.prev_art_number= ids["pre_arv_number"]
   patient.filing_number= ids["filing_number"]
@@ -338,6 +332,7 @@ def self.create_guardian(pat)
     temp_relative = Patient.find(:last, :conditions => ["patient_id = ? ", relative.relative_id])
     temp = PatientName.find(:last, :conditions => ["patient_id = ? and voided = 0", relative.relative_id])
     guardian.patient_id = pat.id
+    guardian.relative_id = relative.relative_id
     guardian.family_name = temp.family_name rescue nil
     guardian.name = temp.given_name rescue nil
     guardian.gender = temp_relative.gender rescue nil
@@ -1351,9 +1346,8 @@ def flush_users()
 end
 
 def flush_guardians()
-  flush_queue(Guardian_queue, "guardians", ['patient_id', 'family_name', 'name', 'gender', 'relationship', 'creator', 'date_created'])
+  flush_queue(Guardian_queue, "guardians", ['patient_id', 'relative_id', 'family_name', 'name', 'gender', 'relationship', 'creator', 'date_created'])
 end
-
 
 def flush_queue(queue, table, columns)
   if queue.length == 0
