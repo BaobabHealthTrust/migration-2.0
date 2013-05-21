@@ -78,6 +78,7 @@ def start
   elapsed = time_diff_milli t1, t2
   puts "Loaded concepts in #{elapsed}"
 
+  #you can specify the number of patients to export by adding limit then number of patiets e.g limit 100 to the query below
   patients = Patient.find_by_sql("Select * from #{Source_db}.patient where voided = 0")
   patient_ids = patients.map{|p| p.patient_id}
   pat_ids =  [0] if patient_ids.blank?
