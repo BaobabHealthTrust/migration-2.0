@@ -425,6 +425,7 @@ def self.create_hiv_first_visit(visit_encounter_id, encounter)
   enc.location = Location.find(encounter.location_id).name
   enc.visit_encounter_id = visit_encounter_id
   enc.date_created = encounter.date_created
+  enc.encounter_datetime = encounter.encounter_datetime
   enc.old_enc_id = encounter.encounter_id
   enc.creator = encounter.creator
   (encounter.observations || []).each do |ob|
@@ -493,6 +494,7 @@ def self.create_give_drug_record(visit_encounter_id, encounter)
   enc.old_enc_id = encounter.encounter_id
   enc.location = Location.find(encounter.location_id).name
   enc.date_created = encounter.date_created
+  enc.encounter_datetime = encounter.encounter_datetime
 	enc.pres_drug_name1 = Prescriptions[visit_encounter_id.to_s+"drug1"]
 	enc.pres_dosage1 = Prescriptions[visit_encounter_id.to_s+"dosage1"]
 	enc.pres_frequency1= Prescriptions[visit_encounter_id.to_s+"freq1"]
@@ -588,6 +590,7 @@ def self.create_update_outcome(visit_encounter_id, encounter)
   enc.visit_encounter_id = visit_encounter_id
   enc.old_enc_id = encounter.encounter_id
   enc.date_created = encounter.date_created
+  enc.encounter_datetime = encounter.encounter_datetime
   enc.creator = encounter.creator
   (encounter.observations || []).each do |ob|
     case ob.concept.name.upcase
@@ -656,6 +659,7 @@ def self.create_vitals_record(visit_encounter_id, encounter)
   enc.visit_encounter_id = visit_encounter_id
   enc.old_enc_id = encounter.encounter_id
   enc.date_created = encounter.date_created
+  enc.encounter_datetime = encounter.encounter_datetime
   enc.creator = encounter.creator
   details = WeightHeightForAge.new()
   details.patient_height_weight_values(Patient.find(encounter.patient_id))
@@ -708,6 +712,7 @@ def self.create_hiv_reception_record(visit_encounter_id, encounter)
   enc.guardian=Relationship.find(:last, :conditions => ["person_id = ?", pat.id]).relative_id rescue nil
   enc.location = Location.find(encounter.location_id).name
   enc.date_created = encounter.date_created
+  enc.encounter_datetime = encounter.encounter_datetime
   enc.creator = encounter.creator
   (encounter.observations || []).each do |ob|
     case ob.concept.name.upcase
@@ -747,6 +752,7 @@ def self.create_pre_art_record(visit_encounter_id, encounter)
   enc.visit_encounter_id = visit_encounter_id
   enc.old_enc_id = encounter.encounter_id
   enc.date_created = encounter.date_created
+  enc.encounter_datetime = encounter.encounter_datetime
   enc.creator = encounter.creator
   (encounter.observations || []).each do |ob|
     self.repeated_obs(enc, ob) rescue nil
@@ -845,6 +851,7 @@ def self.create_art_encounter(visit_encounter_id, encounter)
   enc.visit_encounter_id = visit_encounter_id
   enc.old_enc_id = encounter.encounter_id
   enc.date_created = encounter.date_created
+  enc.encounter_datetime = encounter.encounter_datetime
   enc.creator = encounter.creator
   enc.location = Location.find(encounter.location_id).name
   drug_name_brought_to_clinic_count = 1
@@ -912,6 +919,7 @@ def self.create_outpatient_diag_encounter(visit_encounter_id, encounter)
   enc.old_enc_id = encounter.encounter_id
   enc.location = Location.find(encounter.location_id).name
   enc.date_created = encounter.date_created
+  enc.encounter_datetime = encounter.encounter_datetime
   enc.creator = encounter.creator
 
   (encounter.observations || []).each do |ob|
@@ -955,6 +963,7 @@ def self.create_general_encounter(visit_encounter_id, encounter)
   enc.old_enc_id = encounter.encounter_id
   enc.location = Location.find(encounter.location_id).name
   enc.date_created = encounter.date_created
+  enc.encounter_datetime = encounter.encounter_datetime
   enc.creator = encounter.creator
 
   (encounter.observations || []).each do |ob|
@@ -995,6 +1004,7 @@ def self.create_hiv_staging_encounter(visit_encounter_id, encounter)
   enc.visit_encounter_id = visit_encounter_id
   enc.location = Location.find(encounter.location_id).name
   enc.date_created = encounter.date_created
+  enc.encounter_datetime = encounter.encounter_datetime
   enc.creator = encounter.creator
   enc.who_stage = "WHO stage "+PersonAttribute.find(:last, :conditions => ["person_id = ? 
     AND person_attribute_type_id = ?", encounter.patient_id, whostage]).value.to_s rescue nil
@@ -1289,60 +1299,60 @@ end
 
 def flush_hiv_reception()
 
-  flush_queue(Hiv_reception_queue, "hiv_reception_encounters", ['visit_encounter_id','old_enc_id', 'patient_id', 'patient_present', 'guardian_present','location', 'date_created', 'creator'])
+  flush_queue(Hiv_reception_queue, "hiv_reception_encounters", ['visit_encounter_id','old_enc_id', 'patient_id', 'patient_present', 'guardian_present','location', 'encounter_datetime', 'date_created', 'creator'])
 
 end
 
 
 def flush_height_weight_queue()
 
-  flush_queue(Height_weight_queue, "vitals_encounters", ['visit_encounter_id','old_enc_id', 'patient_id', 'weight', 'height', 'bmi','location', 'date_created', 'creator'])
+  flush_queue(Height_weight_queue, "vitals_encounters", ['visit_encounter_id','old_enc_id', 'patient_id', 'weight', 'height', 'bmi','location', 'encounter_datetime', 'date_created', 'creator'])
 
 end
 
 def flush_pre_art_visit_queue()
 
-  flush_queue(Pre_art_visit_queue, "pre_art_visit_encounters", ['visit_encounter_id','old_enc_id', 'patient_id', 'patient_pregnant', 'patient_breast_feeding', 'abdominal_pains', 'using_family_planning_method', 'family_planning_method_in_use', 'anorexia', 'cough', 'diarrhoea', 'fever', 'jaundice', 'leg_pain_numbness', 'vomit', 'weight_loss', 'peripheral_neuropathy', 'hepatitis', 'anaemia', 'lactic_acidosis', 'lipodystrophy', 'skin_rash', 'drug_induced_abdominal_pains', 'drug_induced_anorexia', 'drug_induced_diarrhoea', 'drug_induced_jaundice', 'drug_induced_leg_pain_numbness', 'drug_induced_vomit', 'drug_induced_peripheral_neuropathy', 'drug_induced_hepatitis', 'drug_induced_anaemia', 'drug_induced_lactic_acidosis', 'drug_induced_lipodystrophy', 'drug_induced_skin_rash', 'drug_induced_other_symptom', 'tb_status', 'refer_to_clinician', 'prescribe_cpt', 'prescription_duration', 'number_of_condoms_given', 'prescribe_ipt','location', 'date_created', 'creator'])
+  flush_queue(Pre_art_visit_queue, "pre_art_visit_encounters", ['visit_encounter_id','old_enc_id', 'patient_id', 'patient_pregnant', 'patient_breast_feeding', 'abdominal_pains', 'using_family_planning_method', 'family_planning_method_in_use', 'anorexia', 'cough', 'diarrhoea', 'fever', 'jaundice', 'leg_pain_numbness', 'vomit', 'weight_loss', 'peripheral_neuropathy', 'hepatitis', 'anaemia', 'lactic_acidosis', 'lipodystrophy', 'skin_rash', 'drug_induced_abdominal_pains', 'drug_induced_anorexia', 'drug_induced_diarrhoea', 'drug_induced_jaundice', 'drug_induced_leg_pain_numbness', 'drug_induced_vomit', 'drug_induced_peripheral_neuropathy', 'drug_induced_hepatitis', 'drug_induced_anaemia', 'drug_induced_lactic_acidosis', 'drug_induced_lipodystrophy', 'drug_induced_skin_rash', 'drug_induced_other_symptom', 'tb_status', 'refer_to_clinician', 'prescribe_cpt', 'prescription_duration', 'number_of_condoms_given', 'prescribe_ipt','location','encounter_datetime', 'date_created', 'creator'])
 
 end
 
 def flush_outpatient_diag()
 
-	flush_queue(Outpatient_diagnosis_queue,'outpatient_diagnosis_encounters',['visit_encounter_id','old_enc_id', 'patient_id','pri_diagnosis','sec_diagnosis','treatment','location', 'voided', 'void_reason', 'date_voided', 'voided_by', 'date_created', 'creator'])
+	flush_queue(Outpatient_diagnosis_queue,'outpatient_diagnosis_encounters',['visit_encounter_id','old_enc_id', 'patient_id','pri_diagnosis','sec_diagnosis','treatment','location', 'voided', 'void_reason', 'encounter_datetime', 'date_voided', 'voided_by', 'date_created', 'creator'])
 	
 end
 
 def flush_general_recep()
 
-	flush_queue(General_reception_queue, 'general_reception_encounters',['visit_encounter_id','old_enc_id', 'patient_id','patient_present','location', 'voided', 'void_reason', 'date_voided', 'voided_by', 'date_created', 'creator'])
+	flush_queue(General_reception_queue, 'general_reception_encounters',['visit_encounter_id','old_enc_id', 'patient_id','patient_present','location', 'voided', 'void_reason', 'encounter_datetime', 'date_voided', 'voided_by', 'date_created', 'creator'])
 end
 
 def flush_hiv_first_visit
 
-  flush_queue(Hiv_first_visit_queue, "first_visit_encounters", ['visit_encounter_id','old_enc_id', 'patient_id', 'agrees_to_follow_up', 'date_of_hiv_pos_test', 'date_of_hiv_pos_test_estimated', 'location_of_hiv_pos_test', 'arv_number_at_that_site', 'location_of_art_initiation', 'taken_arvs_in_last_two_months', 'taken_arvs_in_last_two_weeks', 'has_transfer_letter', 'site_transferred_from', 'date_of_art_initiation', 'ever_registered_at_art', 'ever_received_arv', 'last_arv_regimen', 'date_last_arv_taken', 'date_last_arv_taken_estimated', 'weight', 'height', 'bmi','location', 'voided', 'void_reason', 'date_voided', 'voided_by', 'date_created', 'creator'])
+  flush_queue(Hiv_first_visit_queue, "first_visit_encounters", ['visit_encounter_id','old_enc_id', 'patient_id', 'agrees_to_follow_up', 'date_of_hiv_pos_test', 'date_of_hiv_pos_test_estimated', 'location_of_hiv_pos_test', 'arv_number_at_that_site', 'location_of_art_initiation', 'taken_arvs_in_last_two_months', 'taken_arvs_in_last_two_weeks', 'has_transfer_letter', 'site_transferred_from', 'date_of_art_initiation', 'ever_registered_at_art', 'ever_received_arv', 'last_arv_regimen', 'date_last_arv_taken', 'date_last_arv_taken_estimated', 'weight', 'height', 'bmi','location', 'voided', 'void_reason', 'date_voided', 'voided_by', 'encounter_datetime', 'date_created', 'creator'])
 
 end
 
 def flush_give_drugs()
 
- flush_queue(Give_drugs_queue, "give_drugs_encounters", ['visit_encounter_id','old_enc_id', 'patient_id','pres_drug_name1','pres_dosage1','pres_frequency1','pres_drug_name2','pres_dosage2','pres_frequency2', 'pres_drug_name3','pres_dosage3','pres_frequency3','pres_drug_name4','pres_dosage4','pres_frequency4','pres_drug_name5', 'pres_dosage5','pres_frequency5','prescription_duration','dispensed_drug_name1', 'dispensed_quantity1', 'dispensed_drug_name2', 'dispensed_quantity2', 'dispensed_drug_name3', 'dispensed_quantity3', 'dispensed_drug_name4', 'dispensed_quantity4', 'dispensed_drug_name5', 'dispensed_quantity5', 'appointment_date', 'location', 'voided', 'void_reason', 'date_voided', 'voided_by', 'date_created', 'creator'])
+ flush_queue(Give_drugs_queue, "give_drugs_encounters", ['visit_encounter_id','old_enc_id', 'patient_id','pres_drug_name1','pres_dosage1','pres_frequency1','pres_drug_name2','pres_dosage2','pres_frequency2', 'pres_drug_name3','pres_dosage3','pres_frequency3','pres_drug_name4','pres_dosage4','pres_frequency4','pres_drug_name5', 'pres_dosage5','pres_frequency5','prescription_duration','dispensed_drug_name1', 'dispensed_quantity1', 'dispensed_drug_name2', 'dispensed_quantity2', 'dispensed_drug_name3', 'dispensed_quantity3', 'dispensed_drug_name4', 'dispensed_quantity4', 'dispensed_drug_name5', 'dispensed_quantity5', 'appointment_date', 'location', 'voided', 'void_reason', 'encounter_datetime', 'date_voided', 'voided_by', 'date_created', 'creator'])
  	Prescriptions.clear()
 end
 
 def flush_hiv_first_visit
-  flush_queue(Hiv_first_visit_queue, "first_visit_encounters", ['visit_encounter_id','old_enc_id', 'patient_id', 'agrees_to_follow_up', 'date_of_hiv_pos_test', 'date_of_hiv_pos_test_estimated', 'location_of_hiv_pos_test', 'arv_number_at_that_site', 'location_of_art_initiation', 'taken_arvs_in_last_two_months', 'taken_arvs_in_last_two_weeks', 'has_transfer_letter', 'site_transferred_from', 'date_of_art_initiation', 'ever_registered_at_art', 'ever_received_arv', 'last_arv_regimen', 'date_last_arv_taken', 'date_last_arv_taken_estimated', 'weight', 'height', 'bmi', 'location','voided', 'void_reason', 'date_voided', 'voided_by', 'date_created', 'creator'])
+  flush_queue(Hiv_first_visit_queue, "first_visit_encounters", ['visit_encounter_id','old_enc_id', 'patient_id', 'agrees_to_follow_up', 'date_of_hiv_pos_test', 'date_of_hiv_pos_test_estimated', 'location_of_hiv_pos_test', 'arv_number_at_that_site', 'location_of_art_initiation', 'taken_arvs_in_last_two_months', 'taken_arvs_in_last_two_weeks', 'has_transfer_letter', 'site_transferred_from', 'date_of_art_initiation', 'ever_registered_at_art', 'ever_received_arv', 'last_arv_regimen', 'date_last_arv_taken', 'date_last_arv_taken_estimated', 'weight', 'height', 'bmi', 'location','voided', 'void_reason', 'date_voided', 'voided_by', 'encounter_datetime', 'date_created', 'creator'])
 end
 
 def flush_art_visit()
-  flush_queue(Art_visit_queue, "art_visit_encounters", ['visit_encounter_id','old_enc_id', 'patient_id', 'patient_pregnant', 'patient_breast_feeding', 'using_family_planning_method', 'family_planning_method_used', 'abdominal_pains', 'anorexia', 'cough', 'diarrhoea', 'fever', 'jaundice', 'leg_pain_numbness', 'vomit', 'weight_loss', 'peripheral_neuropathy', 'hepatitis', 'anaemia', 'lactic_acidosis', 'lipodystrophy', 'skin_rash', 'other_symptoms', 'drug_induced_Abdominal_pains', 'drug_induced_anorexia', 'drug_induced_diarrhoea', 'drug_induced_jaundice', 'drug_induced_leg_pain_numbness', 'drug_induced_vomit', 'drug_induced_peripheral_neuropathy', 'drug_induced_hepatitis', 'drug_induced_anaemia', 'drug_induced_lactic_acidosis', 'drug_induced_lipodystrophy', 'drug_induced_skin_rash', 'drug_induced_other_symptom', 'tb_status', 'refer_to_clinician', 'prescribe_arv', 'drug_name_brought_to_clinic1', 'drug_quantity_brought_to_clinic1', 'drug_left_at_home1', 'drug_name_brought_to_clinic2', 'drug_quantity_brought_to_clinic2', 'drug_left_at_home2', 'drug_name_brought_to_clinic3', 'drug_quantity_brought_to_clinic3', 'drug_left_at_home3', 'drug_name_brought_to_clinic4', 'drug_quantity_brought_to_clinic4', 'drug_left_at_home4', 'arv_regimen','prescribe_cpt', 'number_of_condoms_given', 'depo_provera_given', 'continue_treatment_at_clinic','continue_art','location', 'voided', 'void_reason', 'date_voided', 'voided_by', 'date_created', 'creator'])
+  flush_queue(Art_visit_queue, "art_visit_encounters", ['visit_encounter_id','old_enc_id', 'patient_id', 'patient_pregnant', 'patient_breast_feeding', 'using_family_planning_method', 'family_planning_method_used', 'abdominal_pains', 'anorexia', 'cough', 'diarrhoea', 'fever', 'jaundice', 'leg_pain_numbness', 'vomit', 'weight_loss', 'peripheral_neuropathy', 'hepatitis', 'anaemia', 'lactic_acidosis', 'lipodystrophy', 'skin_rash', 'other_symptoms', 'drug_induced_Abdominal_pains', 'drug_induced_anorexia', 'drug_induced_diarrhoea', 'drug_induced_jaundice', 'drug_induced_leg_pain_numbness', 'drug_induced_vomit', 'drug_induced_peripheral_neuropathy', 'drug_induced_hepatitis', 'drug_induced_anaemia', 'drug_induced_lactic_acidosis', 'drug_induced_lipodystrophy', 'drug_induced_skin_rash', 'drug_induced_other_symptom', 'tb_status', 'refer_to_clinician', 'prescribe_arv', 'drug_name_brought_to_clinic1', 'drug_quantity_brought_to_clinic1', 'drug_left_at_home1', 'drug_name_brought_to_clinic2', 'drug_quantity_brought_to_clinic2', 'drug_left_at_home2', 'drug_name_brought_to_clinic3', 'drug_quantity_brought_to_clinic3', 'drug_left_at_home3', 'drug_name_brought_to_clinic4', 'drug_quantity_brought_to_clinic4', 'drug_left_at_home4', 'arv_regimen','prescribe_cpt', 'number_of_condoms_given', 'depo_provera_given', 'continue_treatment_at_clinic','continue_art','location', 'voided', 'void_reason',  'encounter_datetime', 'date_voided', 'voided_by', 'date_created', 'creator'])
 end
 
 def flush_hiv_staging()
-  flush_queue(Hiv_staging_queue, "hiv_staging_encounters", ['visit_encounter_id','old_enc_id', 'patient_id', 'patient_pregnant', 'patient_breast_feeding', 'cd4_count_available', 'cd4_count', 'cd4_count_modifier', 'cd4_count_percentage', 'date_of_cd4_count', 'asymptomatic', 'persistent_generalized_lymphadenopathy', 'unspecified_stage_1_cond', 'molluscumm_contagiosum', 'wart_virus_infection_extensive', 'oral_ulcerations_recurrent', 'parotid_enlargement_persistent_unexplained', 'lineal_gingival_erythema', 'herpes_zoster', 'respiratory_tract_infections_recurrent', 'unspecified_stage2_condition', 'angular_chelitis', 'papular_prurtic_eruptions', 'hepatosplenomegaly_unexplained', 'oral_hairy_leukoplakia', 'severe_weight_loss', 'fever_persistent_unexplained', 'pulmonary_tuberculosis', 'pulmonary_tuberculosis_last_2_years', 'severe_bacterial_infection', 'bacterial_pnuemonia', 'symptomatic_lymphoid_interstitial_pnuemonitis', 'chronic_hiv_assoc_lung_disease', 'unspecified_stage3_condition', 'aneamia', 'neutropaenia', 'thrombocytopaenia_chronic', 'diarhoea', 'oral_candidiasis', 'acute_necrotizing_ulcerative_gingivitis', 'lymph_node_tuberculosis', 'toxoplasmosis_of_brain', 'cryptococcal_meningitis', 'progressive_multifocal_leukoencephalopathy', 'disseminated_mycosis', 'candidiasis_of_oesophagus', 'extrapulmonary_tuberculosis', 'cerebral_non_hodgkin_lymphoma', 'kaposis', 'hiv_encephalopathy', 'bacterial_infections_severe_recurrent', 'unspecified_stage_4_condition', 'pnuemocystis_pnuemonia', 'disseminated_non_tuberculosis_mycobactierial_infection', 'cryptosporidiosis', 'isosporiasis', 'symptomatic_hiv_asscoiated_nephropathy', 'chronic_herpes_simplex_infection', 'cytomegalovirus_infection', 'toxoplasomis_of_the_brain_1month', 'recto_vaginal_fitsula', 'hiv_wasting_syndrome', 'reason_for_starting_art', 'who_stage','location', 'voided', 'void_reason', 'date_voided', 'voided_by', 'date_created', 'creator'])
+  flush_queue(Hiv_staging_queue, "hiv_staging_encounters", ['visit_encounter_id','old_enc_id', 'patient_id', 'patient_pregnant', 'patient_breast_feeding', 'cd4_count_available', 'cd4_count', 'cd4_count_modifier', 'cd4_count_percentage', 'date_of_cd4_count', 'asymptomatic', 'persistent_generalized_lymphadenopathy', 'unspecified_stage_1_cond', 'molluscumm_contagiosum', 'wart_virus_infection_extensive', 'oral_ulcerations_recurrent', 'parotid_enlargement_persistent_unexplained', 'lineal_gingival_erythema', 'herpes_zoster', 'respiratory_tract_infections_recurrent', 'unspecified_stage2_condition', 'angular_chelitis', 'papular_prurtic_eruptions', 'hepatosplenomegaly_unexplained', 'oral_hairy_leukoplakia', 'severe_weight_loss', 'fever_persistent_unexplained', 'pulmonary_tuberculosis', 'pulmonary_tuberculosis_last_2_years', 'severe_bacterial_infection', 'bacterial_pnuemonia', 'symptomatic_lymphoid_interstitial_pnuemonitis', 'chronic_hiv_assoc_lung_disease', 'unspecified_stage3_condition', 'aneamia', 'neutropaenia', 'thrombocytopaenia_chronic', 'diarhoea', 'oral_candidiasis', 'acute_necrotizing_ulcerative_gingivitis', 'lymph_node_tuberculosis', 'toxoplasmosis_of_brain', 'cryptococcal_meningitis', 'progressive_multifocal_leukoencephalopathy', 'disseminated_mycosis', 'candidiasis_of_oesophagus', 'extrapulmonary_tuberculosis', 'cerebral_non_hodgkin_lymphoma', 'kaposis', 'hiv_encephalopathy', 'bacterial_infections_severe_recurrent', 'unspecified_stage_4_condition', 'pnuemocystis_pnuemonia', 'disseminated_non_tuberculosis_mycobactierial_infection', 'cryptosporidiosis', 'isosporiasis', 'symptomatic_hiv_asscoiated_nephropathy', 'chronic_herpes_simplex_infection', 'cytomegalovirus_infection', 'toxoplasomis_of_the_brain_1month', 'recto_vaginal_fitsula', 'hiv_wasting_syndrome', 'reason_for_starting_art', 'who_stage','location', 'voided', 'void_reason', 'encounter_datetime', 'date_voided', 'voided_by', 'date_created', 'creator'])
 end
 
 def flush_update_outcome()
-  flush_queue(Update_outcome_queue, "outcome_encounters", ['visit_encounter_id','old_enc_id', 'patient_id', 'state', 'outcome_date', 'transferred_out_location','location', 'voided', 'void_reason', 'date_voided', 'voided_by', 'date_created', 'creator'])
+  flush_queue(Update_outcome_queue, "outcome_encounters", ['visit_encounter_id','old_enc_id', 'patient_id', 'state', 'outcome_date', 'transferred_out_location','location', 'voided', 'void_reason', 'encounter_datetime', 'date_voided', 'voided_by', 'date_created', 'creator'])
 end
 
 def flush_patient_outcome()

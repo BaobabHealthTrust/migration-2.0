@@ -19,6 +19,7 @@ create table `outpatient_diagnosis_encounters`(
 `void_reason` varchar(255),
 `date_voided` date default null,
 `voided_by` int(11),
+`encounter_datetime` datetime,
 `date_created` datetime default null,
 `creator` int(11)
 );

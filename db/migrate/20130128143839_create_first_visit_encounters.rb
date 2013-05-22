@@ -34,6 +34,7 @@ ActiveRecord::Base.connection.execute <<EOF
 	`void_reason` varchar(255),
 	`date_voided` date,
 	`voided_by` int (11),
+	`encounter_datetime` datetime,
 	`date_created` datetime not null,
 	`creator` int
  );
