@@ -885,7 +885,7 @@ def self.create_art_encounter(visit_encounter_id, encounter)
         self.repeated_obs(enc, ob)
     end
     unless prescribed_drug_name_hash.blank?
-      self.assign_drugs_prescribed(visit_encounter_id,enc, prescribed_drug_name_hash, prescribed_drug_dosage_hash, prescribed_drug_frequency_hash)
+      self.assign_drugs_prescribed(visit_encounter_id, enc, prescribed_drug_name_hash, prescribed_drug_dosage_hash, prescribed_drug_frequency_hash)
     end
   end
   self.drug_induced_symptom(enc) rescue nil
