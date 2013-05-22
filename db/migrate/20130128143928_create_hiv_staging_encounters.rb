@@ -69,6 +69,7 @@ create table `hiv_staging_encounters`(
 `cytomegalovirus_infection` varchar(25),
 `toxoplasomis_of_the_brain_1month` varchar(25),
 `recto_vaginal_fitsula` varchar(25),
+`hiv_wasting_syndrome` varchar(25),
 `reason_for_starting_art` varchar(25),
 `who_stage` varchar(255),
 `location` varchar(255),

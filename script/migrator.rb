@@ -79,7 +79,7 @@ def start
   puts "Loaded concepts in #{elapsed}"
 
   #you can specify the number of patients to export by adding limit then number of patiets e.g limit 100 to the query below
-  patients = Patient.find_by_sql("Select * from #{Source_db}.patient where voided = 0")
+  patients = Patient.find_by_sql("Select * from #{Source_db}.patient where voided = 0 and patient_id = 18499")
   patient_ids = patients.map{|p| p.patient_id}
   pat_ids =  [0] if patient_ids.blank?
   #get all patient_historical_outcomes
@@ -287,6 +287,7 @@ def self.create_patient(pat)
   patient.dob_estimated = pat.birthdate_estimated
   patient.traditional_authority = ids["ta"]
 	patient.current_address =  PatientAddress.find_by_sql("select city_village from #{Source_db}.patient_address where patient_id = #{pat.id} and voided = 0 limit 1").map{|p| p.city_village}
+	patient.landmark = ids["phy_add"]
   patient.cellphone_number= ids["cell"]
   patient.home_phone_number= ids["home_phone"]
   patient.office_phone_number= ids["office_phone"]
@@ -360,6 +361,8 @@ def self.get_patient_identifiers(pat_id)
 				pat_identifiers["cell"] = id.identifier			
 			when 'TRADITIONAL AUTHORITY '
 				pat_identifiers["ta"] = id.identifier
+		  when 'PHYSICAL ADDRESS'
+		    pat_identifiers['phy_add'] = id.identifier
 			when 'FILING NUMBER'
 				pat_identifiers["filing_number"] = id.identifier
 			when 'HOME PHONE NUMBER'
@@ -1093,6 +1096,8 @@ def self.repeated_obs(enc, ob)
     when 'CD4 COUNT'
       enc.cd4_count = ob.value_numeric
       enc.cd4_count_modifier = ob.value_modifier
+    when 'CD4 COUNT PERCENTAGE'
+      enc.cd4_count_percentage = ob.value_numeric
     when 'CD4 TEST DATE'
       enc.date_of_cd4_count = ob.value_datetime
     when 'ASYMPTOMATIC'
@@ -1195,6 +1200,8 @@ def self.repeated_obs(enc, ob)
       enc.toxoplasomis_of_the_brain_1month = self.get_concept(ob.value_coded)
     when 'RECTO-VAGINAL FISTULA, HIV-ASSOCIATED'
       enc.recto_vaginal_fitsula = self.get_concept(ob.value_coded)
+    when 'HIV WASTING SYNDROME (SEVERE WEIGHT LOSS + PERSISTENT FEVER OR SEVERE LOSS + CHRONIC DIARRHOEA)'
+      enc.hiv_wasting_syndrome = self.get_concept(ob.value_coded)
     when 'REASON ANTIRETROVIRALS STARTED'
       enc.reason_for_starting_art = self.get_concept(ob.value_coded)
     when 'WHO STAGE'
@@ -1331,7 +1338,7 @@ def flush_art_visit()
 end
 
 def flush_hiv_staging()
-  flush_queue(Hiv_staging_queue, "hiv_staging_encounters", ['visit_encounter_id','old_enc_id', 'patient_id', 'patient_pregnant', 'patient_breast_feeding', 'cd4_count_available', 'cd4_count', 'cd4_count_modifier', 'cd4_count_percentage', 'date_of_cd4_count', 'asymptomatic', 'persistent_generalized_lymphadenopathy', 'unspecified_stage_1_cond', 'molluscumm_contagiosum', 'wart_virus_infection_extensive', 'oral_ulcerations_recurrent', 'parotid_enlargement_persistent_unexplained', 'lineal_gingival_erythema', 'herpes_zoster', 'respiratory_tract_infections_recurrent', 'unspecified_stage2_condition', 'angular_chelitis', 'papular_prurtic_eruptions', 'hepatosplenomegaly_unexplained', 'oral_hairy_leukoplakia', 'severe_weight_loss', 'fever_persistent_unexplained', 'pulmonary_tuberculosis', 'pulmonary_tuberculosis_last_2_years', 'severe_bacterial_infection', 'bacterial_pnuemonia', 'symptomatic_lymphoid_interstitial_pnuemonitis', 'chronic_hiv_assoc_lung_disease', 'unspecified_stage3_condition', 'aneamia', 'neutropaenia', 'thrombocytopaenia_chronic', 'diarhoea', 'oral_candidiasis', 'acute_necrotizing_ulcerative_gingivitis', 'lymph_node_tuberculosis', 'toxoplasmosis_of_brain', 'cryptococcal_meningitis', 'progressive_multifocal_leukoencephalopathy', 'disseminated_mycosis', 'candidiasis_of_oesophagus', 'extrapulmonary_tuberculosis', 'cerebral_non_hodgkin_lymphoma', 'kaposis', 'hiv_encephalopathy', 'bacterial_infections_severe_recurrent', 'unspecified_stage_4_condition', 'pnuemocystis_pnuemonia', 'disseminated_non_tuberculosis_mycobactierial_infection', 'cryptosporidiosis', 'isosporiasis', 'symptomatic_hiv_asscoiated_nephropathy', 'chronic_herpes_simplex_infection', 'cytomegalovirus_infection', 'toxoplasomis_of_the_brain_1month', 'recto_vaginal_fitsula', 'reason_for_starting_art', 'who_stage','location', 'voided', 'void_reason', 'date_voided', 'voided_by', 'date_created', 'creator'])
+  flush_queue(Hiv_staging_queue, "hiv_staging_encounters", ['visit_encounter_id','old_enc_id', 'patient_id', 'patient_pregnant', 'patient_breast_feeding', 'cd4_count_available', 'cd4_count', 'cd4_count_modifier', 'cd4_count_percentage', 'date_of_cd4_count', 'asymptomatic', 'persistent_generalized_lymphadenopathy', 'unspecified_stage_1_cond', 'molluscumm_contagiosum', 'wart_virus_infection_extensive', 'oral_ulcerations_recurrent', 'parotid_enlargement_persistent_unexplained', 'lineal_gingival_erythema', 'herpes_zoster', 'respiratory_tract_infections_recurrent', 'unspecified_stage2_condition', 'angular_chelitis', 'papular_prurtic_eruptions', 'hepatosplenomegaly_unexplained', 'oral_hairy_leukoplakia', 'severe_weight_loss', 'fever_persistent_unexplained', 'pulmonary_tuberculosis', 'pulmonary_tuberculosis_last_2_years', 'severe_bacterial_infection', 'bacterial_pnuemonia', 'symptomatic_lymphoid_interstitial_pnuemonitis', 'chronic_hiv_assoc_lung_disease', 'unspecified_stage3_condition', 'aneamia', 'neutropaenia', 'thrombocytopaenia_chronic', 'diarhoea', 'oral_candidiasis', 'acute_necrotizing_ulcerative_gingivitis', 'lymph_node_tuberculosis', 'toxoplasmosis_of_brain', 'cryptococcal_meningitis', 'progressive_multifocal_leukoencephalopathy', 'disseminated_mycosis', 'candidiasis_of_oesophagus', 'extrapulmonary_tuberculosis', 'cerebral_non_hodgkin_lymphoma', 'kaposis', 'hiv_encephalopathy', 'bacterial_infections_severe_recurrent', 'unspecified_stage_4_condition', 'pnuemocystis_pnuemonia', 'disseminated_non_tuberculosis_mycobactierial_infection', 'cryptosporidiosis', 'isosporiasis', 'symptomatic_hiv_asscoiated_nephropathy', 'chronic_herpes_simplex_infection', 'cytomegalovirus_infection', 'toxoplasomis_of_the_brain_1month', 'recto_vaginal_fitsula', 'hiv_wasting_syndrome', 'reason_for_starting_art', 'who_stage','location', 'voided', 'void_reason', 'date_voided', 'voided_by', 'date_created', 'creator'])
 end
 
 def flush_update_outcome()
