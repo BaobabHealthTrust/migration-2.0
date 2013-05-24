@@ -79,7 +79,7 @@ def start
   puts "Loaded concepts in #{elapsed}"
 
   #you can specify the number of patients to export by adding limit then number of patiets e.g limit 100 to the query below
-  patients = Patient.find_by_sql("Select * from #{Source_db}.patient where voided = 0 and patient_id = 18499")
+  patients = Patient.find_by_sql("Select * from #{Source_db}.patient where voided = 0")
   patient_ids = patients.map{|p| p.patient_id}
   pat_ids =  [0] if patient_ids.blank?
   #get all patient_historical_outcomes
@@ -521,11 +521,15 @@ def self.create_give_drug_record(visit_encounter_id, encounter)
 
   enc.creator = encounter.creator
   give_drugs_count = 1
+  @quantity = 0
+
   (encounter.orders || []).each do |order|
     (order.drug_orders || []).each do |drug_order|
-      self.assign_drugs_dispensed(enc, drug_order, give_drugs_count)
-      give_drugs_count+=1
+      @quantity = @quantity + drug_order.quantity
+      @drug_order =  drug_order
     end
+    self.assign_drugs_dispensed(enc, @drug_order, give_drugs_count, @quantity)
+    give_drugs_count+=1
   end
 
 
@@ -551,31 +555,31 @@ def self.create_give_drug_record(visit_encounter_id, encounter)
 end
 
 
-def self.assign_drugs_dispensed(encounter, drug_order, count)
+def self.assign_drugs_dispensed(encounter, drug_order, count, quantity)
   case count
     when 1
-      encounter.dispensed_quantity1 = drug_order.quantity
+      encounter.dispensed_quantity1 = quantity
       encounter.dispensed_drug_name1 = drug_order.drug.name
      # encounter.disp_drug1_start_date = drug_order.start_date
 			#encounter.disp_drug1_auto_expiry_date = drug_order.auto_expire_date
     when 2
-      encounter.dispensed_quantity2 = drug_order.quantity
+      encounter.dispensed_quantity2 = quantity
       encounter.dispensed_drug_name2 = drug_order.drug.name
       #encounter.disp_drug2_start_date = drug_order.start_date
 			#encounter.disp_drug2_auto_expiry_date = drug_order.auto_expire_date
     when 3
-      encounter.dispensed_quantity3 = drug_order.quantity
+      encounter.dispensed_quantity3 = quantity
       encounter.dispensed_drug_name3 = drug_order.drug.name
       #encounter.disp_drug3_start_date = drug_order.start_date
 			#encounter.disp_drug3_auto_expiry_date = drug_order.auto_expire_date
     when 4
-      encounter.dispensed_quantity4 = drug_order.quantity
+      encounter.dispensed_quantity4 = quantity
       encounter.dispensed_drug_name4 = drug_order.drug.name
       #encounter.disp_drug4_start_date = drug_order.start_date
 			#encounter.disp_drug4_auto_expiry_date = drug_order.auto_expire_date
     when 5
 		  encounter.dispensed_drug_name5 = drug_order.drug.name
-      encounter.dispensed_quantity5 = drug_order.quantity
+      encounter.dispensed_quantity5 = quantity
       #encounter.disp_drug5_start_date = drug_order.start_date
 			#encounter.disp_drug5_auto_expiry_date = drug_order.auto_expire_date
   end
