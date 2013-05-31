@@ -524,6 +524,7 @@ def self.create_give_drug_record(visit_encounter_id, encounter)
   @quantity = 0
 
   (encounter.orders || []).each do |order|
+    @quantity = 0
     (order.drug_orders || []).each do |drug_order|
       @quantity = @quantity + drug_order.quantity
       @drug_order =  drug_order
