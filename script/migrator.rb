@@ -331,10 +331,11 @@ def self.create_guardian(pat)
   relatives = Relationship.find(:all, :conditions => ["person_id = ?", pat.id])
   (relatives || []).each do |relative|
     guardian = Guardian.new()
-    temp_relative = Patient.find(:last, :conditions => ["patient_id = ? ", relative.relative_id])
-    temp = PatientName.find(:last, :conditions => ["patient_id = ? and voided = 0", relative.relative_id])
+    guardian_patient_id = Person.find(:last, :conditions => ["person_id = ? ", relative.relative_id]).patient_id
+    temp_relative = Patient.find(:last, :conditions => ["patient_id = ? ", guardian_patient_id])
+    temp = PatientName.find(:last, :conditions => ["patient_id = ? and voided = 0", guardian_patient_id])
     guardian.patient_id = pat.id
-    guardian.relative_id = relative.relative_id
+    guardian.relative_id = guardian_patient_id
     guardian.family_name = temp.family_name rescue nil
     guardian.name = temp.given_name rescue nil
     guardian.gender = temp_relative.gender rescue nil
