@@ -520,7 +520,10 @@ def self.create_give_drug_record(visit_encounter_id, encounter)
       end
    end
 
-  enc.creator = encounter.creator
+  #getting patient's regimen_category
+  patient_regimen_category = Encounter.find_by_sql("select category from #{Source_db}.patient_historical_regimens where patient_id = #{encounter.patient_id} AND encounter_id = #{encounter.encounter_id}").map{|p| p.category}
+  enc.regimen_category = patient_regimen_category
+  enc.creator = encounter.creator  
   give_drugs_count = 1
   @quantity = 0
 
@@ -1341,7 +1344,7 @@ end
 
 def flush_give_drugs()
 
- flush_queue(Give_drugs_queue, "give_drugs_encounters", ['visit_encounter_id','old_enc_id', 'patient_id','pres_drug_name1','pres_dosage1','pres_frequency1','pres_drug_name2','pres_dosage2','pres_frequency2', 'pres_drug_name3','pres_dosage3','pres_frequency3','pres_drug_name4','pres_dosage4','pres_frequency4','pres_drug_name5', 'pres_dosage5','pres_frequency5','prescription_duration','dispensed_drug_name1', 'dispensed_quantity1', 'dispensed_drug_name2', 'dispensed_quantity2', 'dispensed_drug_name3', 'dispensed_quantity3', 'dispensed_drug_name4', 'dispensed_quantity4', 'dispensed_drug_name5', 'dispensed_quantity5', 'appointment_date', 'location', 'voided', 'void_reason', 'encounter_datetime', 'date_voided', 'voided_by', 'date_created', 'creator'])
+ flush_queue(Give_drugs_queue, "give_drugs_encounters", ['visit_encounter_id','old_enc_id', 'patient_id','pres_drug_name1','pres_dosage1','pres_frequency1','pres_drug_name2','pres_dosage2','pres_frequency2', 'pres_drug_name3','pres_dosage3','pres_frequency3','pres_drug_name4','pres_dosage4','pres_frequency4','pres_drug_name5', 'pres_dosage5','pres_frequency5','prescription_duration','dispensed_drug_name1', 'dispensed_quantity1', 'dispensed_drug_name2', 'dispensed_quantity2', 'dispensed_drug_name3', 'dispensed_quantity3', 'dispensed_drug_name4', 'dispensed_quantity4', 'dispensed_drug_name5', 'dispensed_quantity5', 'appointment_date', 'regimen_category', 'location', 'voided', 'void_reason', 'encounter_datetime', 'date_voided', 'voided_by', 'date_created', 'creator'])
  	Prescriptions.clear()
 end
 
