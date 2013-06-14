@@ -1369,7 +1369,7 @@ def flush_patient_outcome()
 end
 
 def flush_users()
-  flush_queue(Users_queue, 'users', ['username', 'first_name', 'middle_name', 'last_name', 'password', 'salt', 'date_created', 'voided', 'void_reason', 'date_voided', 'voided_by', 'creator'])
+  flush_queue(Users_queue, 'users', ['username', 'first_name', 'middle_name', 'last_name', 'password', 'salt', 'user_role1', 'user_role2', 'user_role3', 'user_role4', 'user_role5', 'user_role6', 'user_role7', 'user_role8', 'user_role9', 'user_role10', 'date_created', 'voided', 'void_reason', 'date_voided', 'voided_by', 'creator'])
 end
 
 def flush_guardians()
@@ -1416,12 +1416,29 @@ def self.create_users()
 
   users.each do |user|
     new_user = MigratedUsers.new()
+    
+    user_roles = User.find_by_sql("SELECT r.role FROM #{Source_db}.user_role ur 
+                                       INNER JOIN #{Source_db}.role r ON r.role_id = ur.role_id
+                                       WHERE user_id = #{user.user_id}").map{|role| role.role}
+    
+    
+    new_user.user_id = user.user_id
     new_user.username = user.username
     new_user.first_name = user.first_name
     new_user.middle_name = user.middle_name
     new_user.last_name = user.last_name
     new_user.password = user.password
     new_user.salt = user.salt
+    new_user.user_role1 = user_roles[0]
+    new_user.user_role2 = user_roles[1]
+    new_user.user_role3 = user_roles[2]
+    new_user.user_role4 = user_roles[3]
+    new_user.user_role5 = user_roles[4]
+    new_user.user_role6 = user_roles[5]
+    new_user.user_role7 = user_roles[6]
+    new_user.user_role8 = user_roles[7]
+    new_user.user_role9 = user_roles[8]
+    new_user.user_role10 = user_roles[9]
     new_user.date_created = user.date_created
     new_user.voided = user.voided
     new_user.void_reason = user.void_reason
