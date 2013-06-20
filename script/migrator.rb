@@ -79,7 +79,7 @@ def start
   puts "Loaded concepts in #{elapsed}"
 
   #you can specify the number of patients to export by adding limit then number of patiets e.g limit 100 to the query below
-  patients = Patient.find_by_sql("Select * from #{Source_db}.patient where voided = 0")
+  patients = Patient.find_by_sql("Select * from #{Source_db}.patient where voided = 0 limit 20")
   patient_ids = patients.map{|p| p.patient_id}
   pat_ids =  [0] if patient_ids.blank?
   
@@ -87,7 +87,6 @@ def start
   patients.each do |patient|
     patient_historical_outcomes = PatientOutcome.find_by_sql("SELECT * FROM #{Source_db}.patient_historical_outcomes
                                                               WHERE patient_id = #{patient.patient_id}
-                                                              AND outcome_concept_id NOT IN (373)
                                                               ORDER BY outcome_date")
    
    if !patient_historical_outcomes.blank?
