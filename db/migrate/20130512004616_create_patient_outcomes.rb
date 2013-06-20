@@ -10,7 +10,7 @@ create table `patient_outcomes`(
 `visit_encounter_id` int,
 `outcome_id` int not null,
 `patient_id` int not null,
-`state` varchar(255),
+`outcome_state` varchar(255),
 `outcome_date` date 
 
 );
