@@ -82,14 +82,29 @@ def start
   patients = Patient.find_by_sql("Select * from #{Source_db}.patient where voided = 0")
   patient_ids = patients.map{|p| p.patient_id}
   pat_ids =  [0] if patient_ids.blank?
-  #get all patient_historical_outcomes
-  patient_historical_outcomes = PatientOutcome.find_by_sql("select * from #{Source_db}.patient_historical_outcomes where patient_id IN (#{patient_ids.join(',')})")
-
-  patient_historical_outcomes.each do |outcome|
-    outcome_id =  outcome.id
-    visit_encounter_id = self.check_for_visitdate("#{outcome.patient_id}", outcome.outcome_date)
-   self.create_patient_outcome(outcome.id,visit_encounter_id,outcome.patient_id,outcome.outcome_concept_id,outcome.outcome_date)
+  
+  
+  patients.each do |patient|
+    patient_historical_outcomes = PatientOutcome.find_by_sql("SELECT * FROM #{Source_db}.patient_historical_outcomes
+                                                              WHERE patient_id = #{patient.patient_id}
+                                                              AND outcome_concept_id NOT IN (373)
+                                                              ORDER BY outcome_date")
+   
+   if !patient_historical_outcomes.blank?
+    patient_historical_outcomes.each do |outcome|
+      outcome_id =  outcome.id
+      visit_encounter_id = self.check_for_visitdate("#{outcome.patient_id}", outcome.outcome_date)
+     self.create_patient_outcome(outcome.id,visit_encounter_id,outcome.patient_id,outcome.outcome_concept_id,outcome.outcome_date)
+    end
+   end
+                                                              
+  
   end
+  
+  #get all patient_historical_outcomes
+  #patient_historical_outcomes = PatientOutcome.find_by_sql("select * from #{Source_db}.patient_historical_outcomes where patient_id IN (#{patient_ids.join(',')})")
+
+  
 
   count = patients.length
   puts "Number of patients to be migrated #{count}"
@@ -632,14 +647,14 @@ def self.create_update_outcome(visit_encounter_id, encounter)
 end
 
 def self.create_patient_outcome(outcome_id,visit_encounter_id, patient_id, outcome_concept_id, outcome_date)
-  pat_outcome = PatientOutcome.new() 
+    pat_outcome = PatientOutcome.new() 
 
-  pat_outcome.visit_encounter_id = visit_encounter_id
-  pat_outcome.outcome_id = outcome_id
-  pat_outcome.patient_id = patient_id
-  pat_outcome.state = self.get_concept(outcome_concept_id)
-  pat_outcome.outcome_date = outcome_date
-
+    pat_outcome.visit_encounter_id = visit_encounter_id
+    pat_outcome.outcome_id = outcome_id
+    pat_outcome.patient_id = patient_id
+    pat_outcome.outcome_state = self.get_concept(outcome_concept_id)
+    pat_outcome.outcome_date = outcome_date
+  
 	#if $migratedencs[visit_encounter_id.to_s+"patient_outcome"] == false
 		if Use_queue > 0
 		  if Patient_outcome_queue[Patient_outcome_size-1] == nil
@@ -657,7 +672,6 @@ def self.create_patient_outcome(outcome_id,visit_encounter_id, patient_id, outco
 	#else
 	    $duplicates_outfile << "Enc_id: #{pat_outcome.id}, Pat_id: #{patient_id}, Enc_type: Patient Outcome \n"
 	#end
-	
 end
 
 def self.create_vitals_record(visit_encounter_id, encounter)
@@ -1365,7 +1379,7 @@ def flush_update_outcome()
 end
 
 def flush_patient_outcome()
-  flush_queue(Patient_outcome_queue, "patient_outcomes", ['visit_encounter_id', 'patient_id', 'state', 'outcome_date'])
+  flush_queue(Patient_outcome_queue, "patient_outcomes", ['visit_encounter_id', 'patient_id', 'outcome_state', 'outcome_date'])
 end
 
 def flush_users()
@@ -1420,9 +1434,7 @@ def self.create_users()
     user_roles = User.find_by_sql("SELECT r.role FROM #{Source_db}.user_role ur 
                                        INNER JOIN #{Source_db}.role r ON r.role_id = ur.role_id
                                        WHERE user_id = #{user.user_id}").map{|role| role.role}
-    
-    
-    new_user.user_id = user.user_id
+
     new_user.username = user.username
     new_user.first_name = user.first_name
     new_user.middle_name = user.middle_name
