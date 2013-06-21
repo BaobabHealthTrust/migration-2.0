@@ -342,7 +342,8 @@ def self.create_patient(pat)
 end
 
 def self.create_guardian(pat)
-  relatives = Relationship.find(:all, :conditions => ["person_id = ?", pat.id])
+  person_id = Person.find(:last, :conditions => ["patient_id = ? ", pat.id]).person_id
+  relatives = Relationship.find(:all, :conditions => ["person_id = ?", person_id])
   (relatives || []).each do |relative|
     guardian = Guardian.new()
     guardian_patient_id = Person.find(:last, :conditions => ["person_id = ? ", relative.relative_id]).patient_id
