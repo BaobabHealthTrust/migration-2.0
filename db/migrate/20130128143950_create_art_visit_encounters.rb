@@ -43,7 +43,7 @@ create table `art_visit_encounters` (
 `drug_induced_lipodystrophy` varchar(25),
 `drug_induced_skin_rash` varchar(25),
 `drug_induced_other_symptom` varchar(25),
-`tb_status` varchar(25),
+`tb_status` varchar(255),
 `refer_to_clinician` varchar(25),
 `prescribe_arv` varchar(25),
 `drug_name_brought_to_clinic1` varchar(255),
