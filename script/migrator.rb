@@ -536,7 +536,10 @@ def self.create_give_drug_record(visit_encounter_id, encounter)
    end
 
   #getting patient's regimen_category
-  patient_regimen_category = Encounter.find_by_sql("select category from #{Source_db}.patient_historical_regimens where patient_id = #{encounter.patient_id} AND encounter_id = #{encounter.encounter_id}").map{|p| p.category}
+  @encounter_datetime = encounter.encounter_datetime.to_date
+
+  patient_regimen_category = Encounter.find_by_sql("select category from #{Source_db}.patient_historical_regimens where patient_id = #{encounter.patient_id} AND (encounter_id = #{encounter.encounter_id} OR DATE(dispensed_date) = '#{@encounter_datetime}')").map{|p| p.category}
+
   enc.regimen_category = patient_regimen_category
   enc.creator = encounter.creator  
   give_drugs_count = 1
