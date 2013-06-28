@@ -128,7 +128,7 @@ def start
     puts "Working on patient with ID: #{patient.id}"
     pt1 = Time.now
 
-    encounters = Encounter.find_by_sql("Select * from #{Source_db}.encounter where patient_id = #{patient.id} order by encounter_datetime desc")
+    encounters = Encounter.find_by_sql("Select * from #{Source_db}.encounter where patient_id = #{patient.id} order by encounter_datetime desc, date_created desc")
     
     #check if patient does not have update outcome encounter
     patient_encounter_types = encounters.map{|enc| enc.encounter_type}
@@ -165,8 +165,8 @@ def start
   flush_hiv_reception()
   flush_pre_art_visit_queue()
   flush_height_weight_queue()
- 	flush_outpatient_diag()
-	flush_general_recep()
+  flush_outpatient_diag()
+  flush_general_recep()
   flush_give_drugs()
   flush_outpatient_diag()
   flush_art_visit()
@@ -424,12 +424,12 @@ def self.create_record(visit_encounter_id, encounter)
       self.create_art_encounter(visit_encounter_id, encounter)
     when 'HIV STAGING'
       self.create_hiv_staging_encounter(visit_encounter_id, encounter)
-  	when 'OUTPATIENT DIAGNOSIS'  	
-  		self.create_outpatient_diag_encounter(visit_encounter_id, encounter)
-  	when 'GENERAL RECEPTION'
-			self.create_general_encounter(visit_encounter_id, encounter)
-		else
-			$failed_encs << "#{encounter.encounter_id} : Invalid encounter type "
+    when 'OUTPATIENT DIAGNOSIS'  	
+      self.create_outpatient_diag_encounter(visit_encounter_id, encounter)
+    when 'GENERAL RECEPTION'
+      self.create_general_encounter(visit_encounter_id, encounter)
+    else
+      $failed_encs << "#{encounter.encounter_id} : Invalid encounter type "
   end
 
 end
@@ -938,7 +938,7 @@ end
 
 def self.create_outpatient_diag_encounter(visit_encounter_id, encounter)
 
-	enc = OutpatientDiagnosisEncounter.new()
+  enc = OutpatientDiagnosisEncounter.new()
 
   enc.patient_id = encounter.patient_id
   enc.visit_encounter_id = visit_encounter_id
