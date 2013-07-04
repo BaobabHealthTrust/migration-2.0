@@ -128,14 +128,20 @@ def start
     puts "Working on patient with ID: #{patient.id}"
     pt1 = Time.now
 
-    encounters = Encounter.find_by_sql("Select * from #{Source_db}.encounter where patient_id = #{patient.id} order by encounter_datetime desc, date_created desc")
-    
+    encounters = Encounter.find_by_sql("Select e.* from #{Source_db}.encounter e
+                                          inner join #{Source_db}.obs o on e.encounter_id = o.encounter_id
+                                        where e.patient_id = #{patient.id}
+                                        and o.voided = 0
+                                        group by e.encounter_id
+                                        order by e.encounter_datetime desc, e.date_created desc")
+
     #check if patient does not have update outcome encounter
     patient_encounter_types = encounters.map{|enc| enc.encounter_type}
 
     encounters.each do |enc|
       total_enc +=1
       pat_enc +=1
+      
       visit_encounter_id = self.check_for_visitdate("#{patient.id}", enc.encounter_datetime.to_date)
       if !enc.encounter_type.blank?
       	self.create_record(visit_encounter_id, enc)
