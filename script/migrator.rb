@@ -128,14 +128,20 @@ def start
     puts "Working on patient with ID: #{patient.id}"
     pt1 = Time.now
 
-    encounters = Encounter.find_by_sql("Select * from #{Source_db}.encounter where patient_id = #{patient.id} order by encounter_datetime desc, date_created desc")
-    
+    encounters = Encounter.find_by_sql("Select e.* from #{Source_db}.encounter e
+                                          inner join #{Source_db}.obs o on e.encounter_id = o.encounter_id
+                                        where e.patient_id = #{patient.id}
+                                        and o.voided = 0
+                                        group by e.encounter_id
+                                        order by e.encounter_datetime desc, e.date_created desc")
+
     #check if patient does not have update outcome encounter
     patient_encounter_types = encounters.map{|enc| enc.encounter_type}
 
     encounters.each do |enc|
       total_enc +=1
       pat_enc +=1
+      
       visit_encounter_id = self.check_for_visitdate("#{patient.id}", enc.encounter_datetime.to_date)
       if !enc.encounter_type.blank?
       	self.create_record(visit_encounter_id, enc)
@@ -551,7 +557,19 @@ def self.create_give_drug_record(visit_encounter_id, encounter)
       @quantity = @quantity + drug_order.quantity
       @drug_order =  drug_order
     end
-    self.assign_drugs_dispensed(enc, @drug_order, give_drugs_count, @quantity)
+
+    @patient_id = Encounter.find_by_encounter_id(order.encounter_id).patient_id
+    @encounter_datetime = Encounter.find_by_encounter_id(order.encounter_id).encounter_datetime.to_date
+    
+    daily_consumption = []
+    Patient.find_by_sql("select * from #{Source_db}.patient_prescription_totals
+                   where patient_id = #{@patient_id}
+                   and drug_id = #{@drug_order.drug_inventory_id}
+                   and prescription_date = '#{@encounter_datetime}'").each do |dose|
+                    daily_consumption << dose.daily_consumption
+          end
+
+    self.assign_drugs_dispensed(enc, @drug_order, give_drugs_count, @quantity, daily_consumption.to_s)
     give_drugs_count+=1
   end
 
@@ -578,31 +596,36 @@ def self.create_give_drug_record(visit_encounter_id, encounter)
 end
 
 
-def self.assign_drugs_dispensed(encounter, drug_order, count, quantity)
+def self.assign_drugs_dispensed(encounter, drug_order, count, quantity, dosage)
   case count
     when 1
       encounter.dispensed_quantity1 = quantity
       encounter.dispensed_drug_name1 = drug_order.drug.name
+      encounter.dispensed_dosage1 = dosage
      # encounter.disp_drug1_start_date = drug_order.start_date
 			#encounter.disp_drug1_auto_expiry_date = drug_order.auto_expire_date
     when 2
       encounter.dispensed_quantity2 = quantity
       encounter.dispensed_drug_name2 = drug_order.drug.name
+      encounter.dispensed_dosage2 = dosage
       #encounter.disp_drug2_start_date = drug_order.start_date
 			#encounter.disp_drug2_auto_expiry_date = drug_order.auto_expire_date
     when 3
       encounter.dispensed_quantity3 = quantity
       encounter.dispensed_drug_name3 = drug_order.drug.name
+      encounter.dispensed_dosage3 = dosage
       #encounter.disp_drug3_start_date = drug_order.start_date
 			#encounter.disp_drug3_auto_expiry_date = drug_order.auto_expire_date
     when 4
       encounter.dispensed_quantity4 = quantity
       encounter.dispensed_drug_name4 = drug_order.drug.name
+      encounter.dispensed_dosage4 = dosage
       #encounter.disp_drug4_start_date = drug_order.start_date
 			#encounter.disp_drug4_auto_expiry_date = drug_order.auto_expire_date
     when 5
 		  encounter.dispensed_drug_name5 = drug_order.drug.name
       encounter.dispensed_quantity5 = quantity
+      encounter.dispensed_dosage5 = dosage
       #encounter.disp_drug5_start_date = drug_order.start_date
 			#encounter.disp_drug5_auto_expiry_date = drug_order.auto_expire_date
   end
@@ -899,12 +922,21 @@ def self.create_art_encounter(visit_encounter_id, encounter)
         Prescriptions[visit_encounter_id.to_s+"pres_duration"] = ob.value_text
       when 'PRESCRIBED DOSE'
         drug_name = Drug.find(ob.value_drug).name
+        @prescription_date = ob.obs_datetime.to_date
         if prescribed_drug_name_hash[drug_name].blank?
+          daily_consumption = []
+ 
+          Patient.find_by_sql("select * from #{Source_db}.patient_prescription_totals
+                   where patient_id = #{ob.patient_id}
+                   and drug_id = #{ob.value_drug}
+                   and prescription_date = '#{@prescription_date}'").each do |dose|
+                    daily_consumption << dose.daily_consumption
+          end
           prescribed_drug_name_hash[drug_name] = drug_name
-          prescribed_drug_dosage_hash[drug_name] = "#{ob.value_numeric}"
+          prescribed_drug_dosage_hash[drug_name] = "#{daily_consumption.to_s}"
           prescribed_drug_frequency_hash[drug_name] = ob.value_text
         else
-          prescribed_drug_dosage_hash[drug_name] += "-#{ob.value_numeric}"
+          prescribed_drug_dosage_hash[drug_name] += "-#{daily_consumption.to_s}"
           prescribed_drug_frequency_hash[drug_name] += "-#{ob.value_text}"
         end
       else
@@ -1361,7 +1393,7 @@ end
 
 def flush_give_drugs()
 
- flush_queue(Give_drugs_queue, "give_drugs_encounters", ['visit_encounter_id','old_enc_id', 'patient_id','pres_drug_name1','pres_dosage1','pres_frequency1','pres_drug_name2','pres_dosage2','pres_frequency2', 'pres_drug_name3','pres_dosage3','pres_frequency3','pres_drug_name4','pres_dosage4','pres_frequency4','pres_drug_name5', 'pres_dosage5','pres_frequency5','prescription_duration','dispensed_drug_name1', 'dispensed_quantity1', 'dispensed_drug_name2', 'dispensed_quantity2', 'dispensed_drug_name3', 'dispensed_quantity3', 'dispensed_drug_name4', 'dispensed_quantity4', 'dispensed_drug_name5', 'dispensed_quantity5', 'appointment_date', 'regimen_category', 'location', 'voided', 'void_reason', 'encounter_datetime', 'date_voided', 'voided_by', 'date_created', 'creator'])
+ flush_queue(Give_drugs_queue, "give_drugs_encounters", ['visit_encounter_id','old_enc_id', 'patient_id','pres_drug_name1','pres_dosage1','pres_frequency1','pres_drug_name2','pres_dosage2','pres_frequency2', 'pres_drug_name3','pres_dosage3','pres_frequency3','pres_drug_name4','pres_dosage4','pres_frequency4','pres_drug_name5', 'pres_dosage5','pres_frequency5','prescription_duration','dispensed_drug_name1', 'dispensed_quantity1','dispensed_dosage1', 'dispensed_drug_name2', 'dispensed_quantity2', 'dispensed_dosage2', 'dispensed_drug_name3', 'dispensed_quantity3', 'dispensed_dosage3', 'dispensed_drug_name4', 'dispensed_quantity4', 'dispensed_dosage4', 'dispensed_drug_name5', 'dispensed_quantity5', 'dispensed_dosage5', 'appointment_date', 'regimen_category', 'location', 'voided', 'void_reason', 'encounter_datetime', 'date_voided', 'voided_by', 'date_created', 'creator'])
  	Prescriptions.clear()
 end
 
