@@ -6,7 +6,7 @@ $outcome_id = 1
 
 def start
   count = 1
-  patients =  $mysql_conn.query("SELECT * FROM tbpatient LIMIT 5")
+  patients =  $mysql_conn.query("SELECT * FROM tbpatient LIMIT 4")
   patients.each do |row|
     puts "Working with patient #{count}"
     create_patient(row)
@@ -19,7 +19,7 @@ def start
 
       if first_followup
         create_hiv_first_visit_enc(row, followup_visit)
-        create_hiv_staging_enc(row)
+        create_hiv_staging_enc(row, followup_visit)
         first_followup = false
       end
 
@@ -52,14 +52,14 @@ def create_patient(patient_array)
   patient.current_address = $mysql_conn.query("SELECT FdsLookup FROM tbreference WHERE FdxReference = #{patient_array[3]}").fetch_row[0]
   patient.occupation= $mysql_conn.query("SELECT FdsLookup FROM tbreference WHERE FdxReference = #{patient_array[5]}").fetch_row[0]
   patient.dead = patient_array[22] == "-1" ? true : false
+  patient.art_number= patient_array[8]
 =begin
   patient.traditional_authority = ids["ta"]
   patient.landmark = ids["phy_add"]
   patient.cellphone_number= ids["cell"]
   patient.home_phone_number= ids["home_phone"]
   patient.office_phone_number= ids["office_phone"]
-  patient.nat_id = nil
-  patient.art_number= patient_array[8]
+  patient.nat_id = ni
   patient.pre_art_number= ids["pre_arv_number"]
   patient.tb_number= ids["tb_id"]
   patient.new_nat_id= ids["new_nat_id"]
@@ -128,9 +128,9 @@ def create_hiv_first_visit_enc(patient_data, visit_data)
   enc.encounter_datetime = visit_data[9]
   enc.old_enc_id = $enc_id
   enc.creator = 1
-  enc.agrees_to_follow_up = "Yes"
+  enc.agrees_to_follow_up = visit_data[10].blank? ? "No" : "Yes"
   enc.ever_received_arv = check_if_ever_received_art(patient_data[0])
-  enc.ever_registered_at_art = transfer_in == true ? "Yes" : "No"
+  enc.ever_registered_at_art = (transfer_in == true || enc.ever_received_arv == "Yes") ? "Yes" : "No"
   enc.location_of_hiv_pos_test = 'Unknown'
   enc.date_of_hiv_pos_test = patient_data[19]
   enc.arv_number_at_that_site = patient_data[8]
@@ -190,7 +190,7 @@ def  create_patient_outcomes(init_patient_data)
 
 end
 
-def create_hiv_staging_enc(patient_data)
+def create_hiv_staging_enc(patient_data, visit_data)
 
   puts "creating hiv staging encounter"
   diagnosis = $mysql_conn.query("SELECT * FROM tbpatientdiagnosis WHERE FdxReferencePatient = #{patient_data[0]}")
@@ -203,16 +203,18 @@ def create_hiv_staging_enc(patient_data)
     enc.visit_encounter_id = self.check_for_visit_date(patient_data[0],patient_data[1])
     enc.location = "Thyolo District Hospital"
     enc.date_created = patient_data[1]
-    enc.encounter_datetime = patient_data[1]
+    enc.encounter_datetime = visit_data[9]
     enc.creator = 1
-    enc.who_stage = "WHO stage" + patient_data[38].to_s rescue nil
+    enc.who_stage = "WHO stage " + patient_data[38].to_s rescue nil
     enc.reason_for_starting_art = "Unknown"
+    enc.cd4_count = visit_data[19]
+    enc.date_of_cd4_count = visit_data[14]
     diagnosis.each do |ob|
       self.repeated_obs_staging(enc, ob[4])
     end
-
     enc.save
     $enc_id +=1
+    #reason_for_starting_arv(patient_data, enc)
   end
 
 end
@@ -242,40 +244,47 @@ def create_art_visit_enc(patient_data, visit_data)
 
   end
 
+  if !drugs.blank?
+    create_patient_outcome(patient_data[0], "On ART", visit_data[9])
+  end
+
   last_visit = $mysql_conn.query("SELECT * FROM tbfollowupdrug WHERE FdxReferenceFollowUp =
                                   (SELECT FdxReference FROM tbfollowup WHERE FdxReferencePatient = #{patient_data[0]} AND
                                   FddVisit < '#{visit_data[9]}' ORDER BY FddVisit DESC LIMIT 1)")
 
-  i = 1
+  unless visit_data[34].blank?
+    i = 1
 
-  last_visit.each do |dispensed|
+    last_visit.each do |dispensed|
 
-    drug_detail = $mysql_conn.query("SELECT * FROM drug_map WHERE FdxReference = #{dispensed[4]}").fetch_row
+      drug_detail = $mysql_conn.query("SELECT * FROM drug_map WHERE FdxReference = #{dispensed[4]}").fetch_row
 
-    case i
-      when 1
+      case i
+        when 1
 
-        enc.drug_name_brought_to_clinic1 = drug_detail[5] rescue nil
-        enc.drug_quantity_brought_to_clinic1 =  get_brought(amount_dispensed(drug_detail[10], (visit_data[10].to_date - visit_data[9].to_date).to_i),   visit_data[34]) rescue nil
+          enc.drug_name_brought_to_clinic1 = drug_detail[5] rescue nil
+          enc.drug_quantity_brought_to_clinic1 =  get_brought(amount_dispensed(drug_detail[10], (visit_data[10].to_date - visit_data[9].to_date).to_i),   visit_data[34]) rescue nil
 
-        enc.drug_left_at_home1 = nil
-      when 2
-        enc.drug_name_brought_to_clinic2 = drug_detail[5] rescue nil
-        enc.drug_quantity_brought_to_clinic2 =  get_brought(amount_dispensed(drug_detail[10], (visit_data[10].to_date - visit_data[9].to_date).to_i),   visit_data[34]) rescue nil
+          enc.drug_left_at_home1 = nil
+        when 2
+          enc.drug_name_brought_to_clinic2 = drug_detail[5] rescue nil
+          enc.drug_quantity_brought_to_clinic2 =  get_brought(amount_dispensed(drug_detail[10], (visit_data[10].to_date - visit_data[9].to_date).to_i),   visit_data[34]) rescue nil
 
-        enc.drug_left_at_home1 = nil
-      when 3
-        enc.drug_name_brought_to_clinic3 = drug_detail[5] rescue nil
-        enc.drug_quantity_brought_to_clinic3 = get_brought(amount_dispensed(drug_detail[10], (visit_data[10].to_date - visit_data[9].to_date).to_i),   visit_data[34]) rescue nil
+          enc.drug_left_at_home1 = nil
+        when 3
+          enc.drug_name_brought_to_clinic3 = drug_detail[5] rescue nil
+          enc.drug_quantity_brought_to_clinic3 = get_brought(amount_dispensed(drug_detail[10], (visit_data[10].to_date - visit_data[9].to_date).to_i),   visit_data[34]) rescue nil
 
-        enc.drug_left_at_home1 = nil
-      when 4
-        enc.drug_name_brought_to_clinic4 = drug_detail[5] rescue nil
-        enc.drug_quantity_brought_to_clinic4 = get_brought(amount_dispensed(drug_detail[10], (visit_data[10].to_date - visit_data[9].to_date).to_i),   visit_data[34]) rescue nil
+          enc.drug_left_at_home1 = nil
+        when 4
+          enc.drug_name_brought_to_clinic4 = drug_detail[5] rescue nil
+          enc.drug_quantity_brought_to_clinic4 = get_brought(amount_dispensed(drug_detail[10], (visit_data[10].to_date - visit_data[9].to_date).to_i),   visit_data[34]) rescue nil
 
-        enc.drug_left_at_home1 = nil
+          enc.drug_left_at_home1 = nil
+      end
+      i +=1
     end
-    i +=1
+
   end
 
 
@@ -286,8 +295,6 @@ def create_art_visit_enc(patient_data, visit_data)
     enc.continue_art = "No"
     enc.continue_treatment_at_clinic = "No"
   end
-
-  create_patient_outcome(patient_data[0], "On ART", visit_data[9])
 
   diagnosis = $mysql_conn.query("SELECT * FROM tbfollowupdiagnosis WHERE FdxReferenceFollowUp = #{visit_data[0]}")
   diagnosis.each do |ob|
@@ -304,13 +311,13 @@ def create_pre_art_visit_enc(patient_details, visit_data)
   puts "creating pre-art visit encounter"
   enc = PreArtVisitEncounter.new()
   enc.patient_id = patient_details[0]
-  enc.location = "Thyolo district hospital"
+  enc.location = "Thyolo District Hospital"
   enc.visit_encounter_id = self.check_for_visit_date(patient_details[0], visit_data[9])
   enc.old_enc_id = $enc_id
   enc.date_created = visit_data[1]
   enc.encounter_datetime = visit_data[9]
   enc.creator = 1
-  enc.prescription_duration = (visit_data[10].to_date - visit_data[9].to_date).to_i
+  enc.prescription_duration = (visit_data[10].to_date - visit_data[9].to_date).to_i rescue nil
   enc.tb_status = check_if_patient_has_tb(patient_details[0], visit_data[9], visit_data[13])
   enc.prescribe_cpt = $mysql_conn.query("SELECT * FROM tbfollowupdrug WHERE FdxReferenceFollowUp = #{visit_data[0]}
                                           AND FdxReferenceDrug IN (56,148)").num_rows > 0 ? "Yes" : "No"
@@ -338,67 +345,80 @@ end
 
 def create_give_drugs_encounters(patient_data, visit_data)
 
-  puts "Creating give drugs encounter, reference #{visit_data[0]}"
-  enc = GiveDrugsEncounter.new()
-  enc.patient_id = patient_data[0]
-  enc.visit_encounter_id = self.check_for_visit_date(patient_data[0],visit_data[9])
-  enc.old_enc_id = $enc_id
-  enc.location = "Thyolo district hospital"
-  enc.date_created = visit_data[1]
-  enc.encounter_datetime = visit_data[9]
-  enc.prescription_duration =  (visit_data[10].to_date - visit_data[9].to_date).to_i rescue nil
-  enc.appointment_date = visit_data[10]
-  enc.creator = 1
-
   drugs = $mysql_conn.query("SELECT * FROM tbfollowupdrug WHERE FdxReferenceFollowUp = #{visit_data[0]}")
-  count = 1
-  drugs.each do |drug|
 
-    case count
-      when 1
-        enc.pres_drug_name1 = drug_detail[5] rescue nil
-        enc.pres_dosage1 = drug[10]
-        enc.pres_frequency1= "Evening-Noon-Night-Morning"
-        enc.dispensed_quantity1 = amount_dispensed(drug[10], (visit_data[10].to_date - visit_data[9].to_date).to_i ) rescue nil
-        enc.dispensed_drug_name1 = enc.pres_drug_name1
+  if drugs.num_rows > 0
 
-
-      when 2
-        enc.pres_drug_name2 = drug_detail[5] rescue nil
-        enc.pres_dosage2 = drug[10]
-        enc.pres_frequency2= "Evening-Noon-Night-Morning"
-        enc.dispensed_quantity2 = amount_dispensed(drug[10], (visit_data[10].to_date - visit_data[9].to_date).to_i ) rescue nil
-        enc.dispensed_drug_name2 = enc.pres_drug_name1
-
-      when 3
-        enc.pres_drug_name3 = drug_detail[5] rescue nil
-        enc.pres_dosage3 = drug[10]
-        enc.pres_frequency3= "Evening-Noon-Night-Morning"
-        enc.dispensed_quantity3 = amount_dispensed(drug[10], (visit_data[10].to_date - visit_data[9].to_date).to_i ) rescue nil
-        enc.dispensed_drug_name3 = enc.pres_drug_name1
-
-      when 4
-        enc.pres_drug_name4 = drug_detail[5] rescue nil
-        enc.pres_dosage4 = drug[10]
-        enc.pres_frequency4= "Evening-Noon-Night-Morning"
-        enc.dispensed_quantity4 = amount_dispensed(drug[10], (visit_data[10].to_date - visit_data[9].to_date).to_i ) rescue nil
-        enc.dispensed_drug_name4 = enc.pres_drug_name4
+    puts "Creating give drugs encounter, reference #{visit_data[0]}"
+    enc = GiveDrugsEncounter.new()
+    enc.patient_id = patient_data[0]
+    enc.visit_encounter_id = self.check_for_visit_date(patient_data[0],visit_data[9])
+    enc.old_enc_id = $enc_id
+    enc.location = "Thyolo District Hospital"
+    enc.date_created = visit_data[1]
+    enc.encounter_datetime = visit_data[9]
+    enc.prescription_duration =  durations((visit_data[10].to_date - visit_data[9].to_date).to_i) rescue nil
+    enc.appointment_date = visit_data[10]
+    enc.creator = 1
 
 
-      when 5
-        enc.pres_drug_name5 = drug_detail[5] rescue nil
-        enc.pres_dosage5 = drug[10]
-        enc.pres_frequency5= "Evening-Noon-Night-Morning"
-        enc.dispensed_quantity5 = amount_dispensed(drug[10], (visit_data[10].to_date - visit_data[9].to_date).to_i ) rescue nil
-        enc.dispensed_drug_name5 = enc.pres_drug_name5
+    count = 1
+    drugs.each do |drug|
+
+      drug_detail = $mysql_conn.query("SELECT * FROM drug_map WHERE FdxReference = #{drug[4]}").fetch_row
+
+      case count
+        when 1
+          enc.pres_drug_name1 = drug_detail[5] rescue nil
+          enc.pres_dosage1 = drug_detail[10]
+          enc.pres_frequency1= "Evening-Noon-Night-Morning"
+          enc.dispensed_quantity1 = amount_dispensed(drug[10], (visit_data[10].to_date - visit_data[9].to_date).to_i ) rescue nil
+          enc.dispensed_drug_name1 = enc.pres_drug_name1
+          enc.dispensed_dosage1 = drug_detail[10]
+
+        when 2
+          enc.pres_drug_name2 = drug_detail[5] rescue nil
+          enc.pres_dosage2 = drug_detail[10]
+          enc.pres_frequency2= "Evening-Noon-Night-Morning"
+          enc.dispensed_quantity2 = amount_dispensed(drug[10], (visit_data[10].to_date - visit_data[9].to_date).to_i ) rescue nil
+          enc.dispensed_drug_name2 = enc.pres_drug_name1
+          enc.dispensed_dosage2 = drug_detail[10]
+
+        when 3
+          enc.pres_drug_name3 = drug_detail[5] rescue nil
+          enc.pres_dosage3 = drug[10]
+          enc.pres_frequency3= "Evening-Noon-Night-Morning"
+          enc.dispensed_quantity3 = amount_dispensed(drug[10], (visit_data[10].to_date - visit_data[9].to_date).to_i ) rescue nil
+          enc.dispensed_drug_name3 = enc.pres_drug_name1
+          enc.dispensed_dosage3 = drug[10]
+
+        when 4
+          enc.pres_drug_name4 = drug_detail[5] rescue nil
+          enc.pres_dosage4 = drug[10]
+          enc.pres_frequency4= "Evening-Noon-Night-Morning"
+          enc.dispensed_quantity4 = amount_dispensed(drug[10], (visit_data[10].to_date - visit_data[9].to_date).to_i ) rescue nil
+          enc.dispensed_drug_name4 = enc.pres_drug_name4
+          enc.dispensed_dosage4 = drug[10]
+
+        when 5
+          enc.pres_drug_name5 = drug_detail[5] rescue nil
+          enc.pres_dosage5 = drug[10]
+          enc.pres_frequency5= "Evening-Noon-Night-Morning"
+          enc.dispensed_quantity5 = amount_dispensed(drug[10], (visit_data[10].to_date - visit_data[9].to_date).to_i ) rescue nil
+          enc.dispensed_drug_name5 = enc.pres_drug_name5
+          enc.dispensed_dosage5 = drug[10]
+
+      end
+
 
     end
+
+    enc.save
+    $enc_id +=1
 
 
   end
 
-  enc.save
-  $enc_id +=1
 
 end
 
@@ -491,7 +511,7 @@ def self.repeated_obs_staging(enc, ob)
     when 'DIARRHOEA'
       enc.diarrhoea = "YES"
     when 'FEVER, UNEXPLAINED'
-      enc.fever = "YES"
+      enc.fever_persistent_unexplained = "YES"
     when 'JAUNDICE'
       enc.jaundice = "YES"
     when 'LEG PAIN / NUMBNESS'
@@ -499,7 +519,7 @@ def self.repeated_obs_staging(enc, ob)
     when 'VOMIT'
       enc.vomit = "YES"
     when 'WEIGHT LOSS <10%'
-      enc.weight_loss = "YES"
+      enc.severe_weight_loss = "YES"
     when 'OTHER SYMPTOM'
       enc.other_symptoms = "YES"
     when 'PERIPHERAL NEUROPATHY'
@@ -518,8 +538,6 @@ def self.repeated_obs_staging(enc, ob)
       enc.asymptomatic = "YES"
     when 'PERSISTENT GENERALIZED LYMPHADENOPATHY'
       enc.persistent_generalized_lymphadenopathy = "YES"
-    when 'UNSPECIFIED STAGE 1 CONDITION'
-      enc.unspecified_stage_1_cond= "YES"
     when 'MOLLUSCUM CONTAGIOSUM'
       enc.molluscumm_contagiosum = "YES"
     when 'WART INFECTION'
@@ -558,10 +576,14 @@ def self.repeated_obs_staging(enc, ob)
       enc.symptomatic_lymphoid_interstitial_pnuemonitis = "YES"
     when 'HIV-ASSOCIATED CHRONIC LUNG DISEASE'
       enc.chronic_hiv_assoc_lung_disease = "YES"
-    when 'UNSPECIFIED STAGE 3 CONDITION'
-      enc.unspecified_stage3_condition = "YES"
     when 'ANAEMIA'
       enc.aneamia = "YES"
+    when 'Anemia 1-2 (Hb 7-9.4)'
+      enc.anaemia = "YES"
+    when 'Anemia 3 (Hb 6.5-6.9)'
+      enc.anaemia = "YES"
+    when 'Anemia 4 (Hb <6.5)'
+      enc.anaemia = "YES"
     when 'UNEXPLAINED ANAEMIA/NEUTROPENIA/THROMBOCYTOPENIA'
       enc.neutropaenia = "YES"
     when 'THROMBOCYTOPAENIA, CHRONIC < 50,000 /MM(CUBED)'
@@ -588,12 +610,10 @@ def self.repeated_obs_staging(enc, ob)
       enc.extrapulmonary_tuberculosis = "YES"
     when 'LYMPHOMA'
       enc.cerebral_non_hodgkin_lymphoma = "YES"
-    when "KAPOSI SARCOMA"
+    when 'KAPOSI SARCOMA'
       enc.kaposis = "YES"
     when 'ENCEPHALOPATHY BY HIV'
       enc.hiv_encephalopathy = "YES"
-    when 'UNSPECIFIED STAGE 4 CONDITION'
-      enc.unspecified_stage_4_condition = "YES"
     when 'PNEUMOCYSTIS PNEUMONIA'
       enc.pnuemocystis_pnuemonia = "YES"
     when 'NON-TB MYCOBACTERIA INFECTION'
@@ -602,8 +622,6 @@ def self.repeated_obs_staging(enc, ob)
       enc.cryptosporidiosis = "YES"
     when 'ISOSPORIASIS'
       enc.isosporiasis = "YES"
-    when 'HIV-ASSOCIATED CARDIOMYOPATHY'
-      enc.symptomatic_hiv_asscoiated_nephropathy = "YES"
     when 'HIV-ASSOCIATED NEPHROPATHY'
       enc.symptomatic_hiv_asscoiated_nephropathy = "YES"
     when 'HERPES SIMPLEX INFECTION'
@@ -616,10 +634,6 @@ def self.repeated_obs_staging(enc, ob)
       enc.recto_vaginal_fitsula = "YES"
     when 'WASTING SYNDROME BY HIV/STUNTING/SEVERE MALNUTRITION'
       enc.hiv_wasting_syndrome = "YES"
-    when 'REASON ANTIRETROVIRALS STARTED'
-      enc.reason_for_starting_art = "YES"
-    when 'WHO STAGE'
-      enc.who_stage = "YES"
 
   end
 end
@@ -697,8 +711,6 @@ def check_if_patient_has_tb(patientid, visit_date, tb_research)
 end
 
 def get_brought(amount_dispensed, adherence)
-  puts amount_dispensed
-  puts adherence
 
   return amount_dispensed - (amount_dispensed *(adherence/100))
 
@@ -734,6 +746,85 @@ def create_patient_outcome(patientid, state, outcome_date)
   pat_outcome.outcome_date = outcome_date
   pat_outcome.save!
   $outcome_id += 1
+
+
+end
+
+def reason_for_starting_arv(patient, encounter, lymph_count)
+
+  reason_for_eligibility = "Unknown"
+  patient_age = encounter.datetime.to_date.year.to_i - get_dob(patient).to_date.year.to_i
+  patient_adult = patient_age > 14 ? "ADULT" : "PEDS"
+  age_in_months = patient_age * 12
+
+  low_cd4_count_350 = false
+  cd4_count_less_than_750 = false
+  low_cd4_count_250 = false
+  low_lymphocyte_count = false
+
+  if encounter.cd4_count <= 250 and (encounter.date_of_cd4_count < '2011-07-01'.to_date)
+    low_cd4_count_250 = true
+  elsif encounter.cd4_count <= 350 and (encounter.date_of_cd4_count >= '2011-07-01'.to_date)
+    low_cd4_count_350 = true
+  elsif encounter.cd4_count <= 750
+    cd4_count_less_than_750 = true
+  end
+
+
+
+  if encounter.who_stage == "WHO stage 3" || encounter.who_stage == "WHO stage 4"
+
+     return "#{encounter.who_stage} #{patient_adult}"
+
+  elsif low_cd4_count_350 and encounter.encounter_datetime  >= '2011-07-01'.to_date
+
+    return "CD4 count < 350"
+
+  elsif low_cd4_count_250
+
+    return "CD4 count < 250"
+
+  elsif low_lymphocyte_count and encounter.who_stage == "WHO stage 2"
+
+    return "Lymphocyte count below threshold with WHO stage 2"
+
+  elsif patient_adult == "PEDS"
+
+      if age_in_months >= 12 and age_in_months < 24
+        return "Child HIV positive"
+      elsif (age_in_months >= 24 and age_in_months < 56) and cd4_count_less_than_750
+        return "CD4 count < 750"
+      else
+        return "Unknown"
+      end
+
+   else
+
+     return "Unknown"
+
+  end
+
+
+
+end
+
+def durations(days)
+
+  if days.between?(5,9)
+    return "1 Week"
+  elsif days.between?(10,17)
+    return "2 weeks"
+  elsif days.between?(18,24)
+    return "3 weeks"
+  elsif days.between?(28,45)
+    return "1 month"
+  elsif days.between?(46,75)
+    return "2 months"
+  elsif days.between?(76,105)
+    return "3 months"
+  else
+    return nil
+  end
 
 
 end
