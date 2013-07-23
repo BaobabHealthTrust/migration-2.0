@@ -6,11 +6,10 @@ $outcome_id = 1
 
 def start
   count = 1
-  patients =  $mysql_conn.query("SELECT * FROM tbpatient LIMIT 4")
+  patients =  $mysql_conn.query("SELECT * FROM tbpatient  LIMIT 3000")
   patients.each do |row|
     puts "Working with patient #{count}"
     create_patient(row)
-    create_patient_outcomes(row)
 
     followups = $mysql_conn.query("SELECT * FROM tbfollowup WHERE FdxReferencePatient = #{row[0]} AND FdxReferenceProgram
                                    IN (167,168,169,379,380,381) ORDER BY FddVisit ASC")
@@ -34,6 +33,7 @@ def start
       create_give_drugs_encounters(row, followup_visit)
 
     end
+    create_patient_outcomes(row)
     count +=1
   end
 
@@ -83,8 +83,8 @@ def create_vitals_enc(follow_up_enc)
   vitals.patient_id = follow_up_enc[3]
   vitals.encounter_datetime = follow_up_enc[9]
   vitals.date_created = follow_up_enc[1]
-  vitals.weight = follow_up_enc[21]
-  vitals.height = follow_up_enc[22]
+  vitals.weight = follow_up_enc[21].round(2) rescue nil
+  vitals.height = follow_up_enc[22].round(2) rescue nil
   vitals.creator = 1
 
   if vitals.height.blank?
@@ -94,7 +94,7 @@ def create_vitals_enc(follow_up_enc)
     current_height = vitals.height
   end
 
-  vitals.bmi = (vitals.weight/(current_height*current_height)*10000) rescue nil
+  vitals.bmi = (vitals.weight/(current_height*current_height)*10000).round(2) rescue nil
 
   vitals.save
   $enc_id +=1
@@ -206,7 +206,7 @@ def create_hiv_staging_enc(patient_data, visit_data)
     enc.encounter_datetime = visit_data[9]
     enc.creator = 1
     enc.who_stage = "WHO stage " + patient_data[38].to_s rescue nil
-    enc.reason_for_starting_art = "Unknown"
+    enc.reason_for_starting_art = reason_for_starting_arv(patient_data, enc, visit_data[20] )
     enc.cd4_count = visit_data[19]
     enc.date_of_cd4_count = visit_data[14]
     diagnosis.each do |ob|
@@ -338,7 +338,7 @@ def create_pre_art_visit_enc(patient_details, visit_data)
 
 
   end
-  create_patient_outcome(patient_details[0], "Pre-ART (Continue)", visit_data[9])
+  create_patient_outcome(patient_details[0], "Never Started ART", visit_data[9])
   enc.save
   $enc_id += 1
 end
@@ -462,39 +462,39 @@ end
 def self.repeated_obs(enc,ob)
   case $mysql_conn.query("SELECT FdsLookup FROM tbreference WHERE FdxReference = #{ob}").fetch_row.to_s.upcase
     when 'PANCREATIC AMYLASE (>2-5 x ULN) AND ABDOMINAL PAIN'
-      enc.abdominal_pains = "YES"
+      enc.abdominal_pains = "Yes"
     when 'ANOREXIA'
-      enc.anorexia = "YES"
+      enc.anorexia = "Yes"
     when 'COUGH'
-      enc.cough = "YES"
+      enc.cough = "Yes"
     when 'DIARRHOEA'
-      enc.diarrhoea = "YES"
+      enc.diarrhoea = "Yes"
     when 'FEVER, UNEXPLAINED'
-      enc.fever = "YES"
+      enc.fever = "Yes"
     when 'JAUNDICE'
-      enc.jaundice = "YES"
+      enc.jaundice = "Yes"
     when 'LEG PAIN / NUMBNESS'
-      enc.leg_pain_numbness = "YES"
+      enc.leg_pain_numbness = "Yes"
     when 'VOMIT'
-      enc.vomit = "YES"
+      enc.vomit = "Yes"
     when 'WEIGHT LOSS <10%'
-      enc.weight_loss = "YES"
+      enc.weight_loss = "Yes"
     when 'HEPATITIS'
-      enc.hepatitis = "YES"
+      enc.hepatitis = "Yes"
     when 'Anemia 1-2 (Hb 7-9.4)'
-      enc.anaemia = "YES"
+      enc.anaemia = "Yes"
     when 'Anemia 3 (Hb 6.5-6.9)'
-      enc.anaemia = "YES"
+      enc.anaemia = "Yes"
     when 'Anemia 4 (Hb <6.5)'
-      enc.anaemia = "YES"
+      enc.anaemia = "Yes"
     when 'LACTIC ACIDOSIS'
-      enc.lactic_acidosis = "YES"
+      enc.lactic_acidosis = "Yes"
     when 'LIPODYSTROPHY'
-      enc.lipodystrophy = "YES"
+      enc.lipodystrophy = "Yes"
     when 'SKIN RASH'
-      enc.skin_rash = "YES"
+      enc.skin_rash = "Yes"
     when 'PERIPHERAL NEUROPATHY'
-      enc.peripheral_neuropathy = "YES"
+      enc.peripheral_neuropathy = "Yes"
 
   end
 end
@@ -503,137 +503,137 @@ def self.repeated_obs_staging(enc, ob)
   case $mysql_conn.query("SELECT FdsLookup FROM tbreference WHERE FdxReference = #{ob}").fetch_row.to_s.upcase
 
     when 'PANCREATIC AMYLASE (>2-5 x ULN) AND ABDOMINAL PAIN'
-      enc.abdominal_pains = "YES"
+      enc.abdominal_pains = "Yes"
     when 'ANOREXIA'
-      enc.anorexia = "YES"
+      enc.anorexia = "Yes"
     when 'COUGH'
-      enc.cough = "YES"
+      enc.cough = "Yes"
     when 'DIARRHOEA'
-      enc.diarrhoea = "YES"
+      enc.diarrhoea = "Yes"
     when 'FEVER, UNEXPLAINED'
-      enc.fever_persistent_unexplained = "YES"
+      enc.fever_persistent_unexplained = "Yes"
     when 'JAUNDICE'
-      enc.jaundice = "YES"
+      enc.jaundice = "Yes"
     when 'LEG PAIN / NUMBNESS'
-      enc.leg_pain_numbness = "YES"
+      enc.leg_pain_numbness = "Yes"
     when 'VOMIT'
-      enc.vomit = "YES"
+      enc.vomit = "Yes"
     when 'WEIGHT LOSS <10%'
-      enc.severe_weight_loss = "YES"
+      enc.severe_weight_loss = "Yes"
     when 'OTHER SYMPTOM'
-      enc.other_symptoms = "YES"
+      enc.other_symptoms = "Yes"
     when 'PERIPHERAL NEUROPATHY'
-      enc.peripheral_neuropathy = "YES"
+      enc.peripheral_neuropathy = "Yes"
     when 'HEPATITIS'
-      enc.hepatitis = "YES"
+      enc.hepatitis = "Yes"
     when 'ANAEMIA'
-      enc.anaemia = "YES"
+      enc.anaemia = "Yes"
     when 'LACTIC ACIDOSIS'
-      enc.lactic_acidosis = "YES"
+      enc.lactic_acidosis = "Yes"
     when 'LIPODYSTROPHY'
-      enc.lipodystrophy = "YES"
+      enc.lipodystrophy = "Yes"
     when 'SKIN RASH'
-      enc.skin_rash = "YES"
+      enc.skin_rash = "Yes"
     when 'ASYMPTOMATIC'
-      enc.asymptomatic = "YES"
+      enc.asymptomatic = "Yes"
     when 'PERSISTENT GENERALIZED LYMPHADENOPATHY'
-      enc.persistent_generalized_lymphadenopathy = "YES"
+      enc.persistent_generalized_lymphadenopathy = "Yes"
     when 'MOLLUSCUM CONTAGIOSUM'
-      enc.molluscumm_contagiosum = "YES"
+      enc.molluscumm_contagiosum = "Yes"
     when 'WART INFECTION'
-      enc.wart_virus_infection_extensive = "YES"
+      enc.wart_virus_infection_extensive = "Yes"
     when 'ORAL ULCERATIONS'
-      enc.oral_ulcerations_recurrent = "YES"
+      enc.oral_ulcerations_recurrent = "Yes"
     when 'UNEXPLAINED PAROTID ENLARGEMENT'
-      enc.parotid_enlargement_persistent_unexplained = "YES"
+      enc.parotid_enlargement_persistent_unexplained = "Yes"
     when 'LINEAL GINGIVAL ERYTHEMA'
-      enc.lineal_gingival_erythema = "YES"
+      enc.lineal_gingival_erythema = "Yes"
     when 'HERPES ZOSTER'
-      enc.herpes_zoster = "YES"
+      enc.herpes_zoster = "Yes"
     when 'RESPIRATORY TRACT INFECTIONS, RECURRENT(SINUSITIS, TONSILLITIS, OTITIS MEDIA, PHARYNGITIS)'
-      enc.respiratory_tract_infections_recurrent = "YES"
+      enc.respiratory_tract_infections_recurrent = "Yes"
     when 'ANGULAR CHEILITIS'
-      enc.angular_chelitis = "YES"
+      enc.angular_chelitis = "Yes"
     when 'FUNGAL NAIL INFECTION'
-      enc.papular_prurtic_eruptions = "YES"
+      enc.papular_prurtic_eruptions = "Yes"
     when 'PAPULAR PRUTIC ERUPTION'
-      enc.papular_prurtic_eruptions = "YES"
+      enc.papular_prurtic_eruptions = "Yes"
     when 'UNEXPLAINED HEPATOSPLENOMEGALY'
-      enc.hepatosplenomegaly_unexplained = "YES"
+      enc.hepatosplenomegaly_unexplained = "Yes"
     when 'ORAL HAIRY LEUKOPLAKIA'
-      enc.oral_hairy_leukoplakia ="YES"
+      enc.oral_hairy_leukoplakia ="Yes"
     when 'WEIGHT LOSS >10%'
-      enc.severe_weight_loss = "YES"
+      enc.severe_weight_loss = "Yes"
     when 'FEVER, PERSISTENT UNEXPLAINED (INTERMITTENT OR CONSTANT, > 1 MONTH)'
-      enc.fever_persistent_unexplained = "YES"
+      enc.fever_persistent_unexplained = "Yes"
     when 'PULMONARY TB'
-      enc.pulmonary_tuberculosis = "YES"
+      enc.pulmonary_tuberculosis = "Yes"
     when 'BACTERIAL INFECTIONS,SEVERE'
-      enc.severe_bacterial_infection = "YES"
+      enc.severe_bacterial_infection = "Yes"
     when 'BACTERIAL PNEUMONIA, SEVERE'
-      enc.bacterial_pnuemonia = "YES"
+      enc.bacterial_pnuemonia = "Yes"
     when 'LYMPHOID INTERSTITIAL PNEUMONITIS'
-      enc.symptomatic_lymphoid_interstitial_pnuemonitis = "YES"
+      enc.symptomatic_lymphoid_interstitial_pnuemonitis = "Yes"
     when 'HIV-ASSOCIATED CHRONIC LUNG DISEASE'
-      enc.chronic_hiv_assoc_lung_disease = "YES"
+      enc.chronic_hiv_assoc_lung_disease = "Yes"
     when 'ANAEMIA'
-      enc.aneamia = "YES"
+      enc.aneamia = "Yes"
     when 'Anemia 1-2 (Hb 7-9.4)'
-      enc.anaemia = "YES"
+      enc.anaemia = "Yes"
     when 'Anemia 3 (Hb 6.5-6.9)'
-      enc.anaemia = "YES"
+      enc.anaemia = "Yes"
     when 'Anemia 4 (Hb <6.5)'
-      enc.anaemia = "YES"
+      enc.anaemia = "Yes"
     when 'UNEXPLAINED ANAEMIA/NEUTROPENIA/THROMBOCYTOPENIA'
-      enc.neutropaenia = "YES"
+      enc.neutropaenia = "Yes"
     when 'THROMBOCYTOPAENIA, CHRONIC < 50,000 /MM(CUBED)'
-      enc.thrombocytopaenia_chronic = "YES"
+      enc.thrombocytopaenia_chronic = "Yes"
     when 'DIARRHOEA UNEXPLAINED'
-      enc.diarhoea = "YES"
+      enc.diarhoea = "Yes"
     when 'ORAL CANDIDIASIS'
-      enc.oral_candidiasis = "YES"
+      enc.oral_candidiasis = "Yes"
     when 'ACUTE NECROTIZING ULCERATIVE GINGIVITIS OR PERIODONTITIS'
-      enc.acute_necrotizing_ulcerative_gingivitis = "YES"
+      enc.acute_necrotizing_ulcerative_gingivitis = "Yes"
     when 'LYMPH NODE TB'
-      enc.lymph_node_tuberculosis = "YES"
+      enc.lymph_node_tuberculosis = "Yes"
     when 'TOXOPLASMOSIS OF THE BRAIN'
-      enc.toxoplasmosis_of_brain = "YES"
+      enc.toxoplasmosis_of_brain = "Yes"
     when 'CRYPTOCOCCAL MENINGITIS'
-      enc.cryptococcal_meningitis = "YES"
+      enc.cryptococcal_meningitis = "Yes"
     when 'PROGRESSIVE MULTIFOCAL LEUKOENCEPHALOPATHY'
-      enc.progressive_multifocal_leukoencephalopathy = "YES"
+      enc.progressive_multifocal_leukoencephalopathy = "Yes"
     when 'MYCOSIS DISSEMINATED'
-      enc.disseminated_mycosis = "YES"
+      enc.disseminated_mycosis = "Yes"
     when 'CANDIDIASIS OF OESOPHAGUS/TRACHEA/BRONCHI/LUNGS'
-      enc.candidiasis_of_oesophagus = "YES"
+      enc.candidiasis_of_oesophagus = "Yes"
     when 'EXTRAPULMONARY TB'
-      enc.extrapulmonary_tuberculosis = "YES"
+      enc.extrapulmonary_tuberculosis = "Yes"
     when 'LYMPHOMA'
-      enc.cerebral_non_hodgkin_lymphoma = "YES"
+      enc.cerebral_non_hodgkin_lymphoma = "Yes"
     when 'KAPOSI SARCOMA'
-      enc.kaposis = "YES"
+      enc.kaposis = "Yes"
     when 'ENCEPHALOPATHY BY HIV'
-      enc.hiv_encephalopathy = "YES"
+      enc.hiv_encephalopathy = "Yes"
     when 'PNEUMOCYSTIS PNEUMONIA'
-      enc.pnuemocystis_pnuemonia = "YES"
+      enc.pnuemocystis_pnuemonia = "Yes"
     when 'NON-TB MYCOBACTERIA INFECTION'
-      enc.disseminated_non_tuberculosis_mycobactierial_infection = "YES"
+      enc.disseminated_non_tuberculosis_mycobactierial_infection = "Yes"
     when 'CRYPTOSPORIDIOSIS'
-      enc.cryptosporidiosis = "YES"
+      enc.cryptosporidiosis = "Yes"
     when 'ISOSPORIASIS'
-      enc.isosporiasis = "YES"
+      enc.isosporiasis = "Yes"
     when 'HIV-ASSOCIATED NEPHROPATHY'
-      enc.symptomatic_hiv_asscoiated_nephropathy = "YES"
+      enc.symptomatic_hiv_asscoiated_nephropathy = "Yes"
     when 'HERPES SIMPLEX INFECTION'
-      enc.chronic_herpes_simplex_infection = "YES"
+      enc.chronic_herpes_simplex_infection = "Yes"
     when 'CYTOMEGALOVIRUS INFECTION'
-      enc.cytomegalovirus_infection = "YES"
+      enc.cytomegalovirus_infection = "Yes"
     when 'TOXOPLASMOSIS OF THE BRAIN (FROM AGE 1 MONTH)'
-      enc.toxoplasomis_of_the_brain_1month = "YES"
+      enc.toxoplasomis_of_the_brain_1month = "Yes"
     when 'RECTO-VAGINAL FISTULA, HIV-ASSOCIATED'
-      enc.recto_vaginal_fitsula = "YES"
+      enc.recto_vaginal_fitsula = "Yes"
     when 'WASTING SYNDROME BY HIV/STUNTING/SEVERE MALNUTRITION'
-      enc.hiv_wasting_syndrome = "YES"
+      enc.hiv_wasting_syndrome = "Yes"
 
   end
 end
@@ -753,7 +753,7 @@ end
 def reason_for_starting_arv(patient, encounter, lymph_count)
 
   reason_for_eligibility = "Unknown"
-  patient_age = encounter.datetime.to_date.year.to_i - get_dob(patient).to_date.year.to_i
+  patient_age = encounter.encounter_datetime.to_date.year.to_i - get_dob(patient).to_date.year.to_i
   patient_adult = patient_age > 14 ? "ADULT" : "PEDS"
   age_in_months = patient_age * 12
 
@@ -762,12 +762,15 @@ def reason_for_starting_arv(patient, encounter, lymph_count)
   low_cd4_count_250 = false
   low_lymphocyte_count = false
 
-  if encounter.cd4_count <= 250 and (encounter.date_of_cd4_count < '2011-07-01'.to_date)
-    low_cd4_count_250 = true
-  elsif encounter.cd4_count <= 350 and (encounter.date_of_cd4_count >= '2011-07-01'.to_date)
-    low_cd4_count_350 = true
-  elsif encounter.cd4_count <= 750
-    cd4_count_less_than_750 = true
+  unless encounter.cd4_count.blank?
+    if encounter.cd4_count <= 250 and (encounter.date_of_cd4_count < '2011-07-01'.to_date)
+      low_cd4_count_250 = true
+    elsif encounter.cd4_count <= 350 and (encounter.date_of_cd4_count >= '2011-07-01'.to_date)
+      low_cd4_count_350 = true
+    elsif encounter.cd4_count <= 750
+      cd4_count_less_than_750 = true
+    end
+
   end
 
 
