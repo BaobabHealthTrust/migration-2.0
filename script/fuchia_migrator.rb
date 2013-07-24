@@ -6,7 +6,7 @@ $outcome_id = 1
 
 def start
   count = 1
-  patients =  $mysql_conn.query("SELECT * FROM tbpatient  LIMIT 3000")
+  patients =  $mysql_conn.query("SELECT * FROM tbpatient LIMIT 2000")
   patients.each do |row|
     puts "Working with patient #{count}"
     create_patient(row)
@@ -234,7 +234,7 @@ def create_art_visit_enc(patient_data, visit_data)
   enc.prescribe_cpt = $mysql_conn.query("SELECT * FROM tbfollowupdrug WHERE FdxReferenceFollowUp = #{visit_data[0]}
                                           AND FdxReferenceDrug IN (56,148)").num_rows > 0 ? "Yes" : "No"
   enc.prescribe_arv = $mysql_conn.query("SELECT * FROM tbfollowupdrug WHERE FdxReferenceFollowUp = #{visit_data[0]}
-                                          AND FdxReferenceDrug NOT IN (56,148)").num_rows > 0 ? "Yes" : "No"
+                                          AND FdxReferenceDrug NOT IN (56,148,57,58, 211)").num_rows > 0 ? "Yes" : "No"
   drugs = $mysql_conn.query("SELECT * FROM tbfollowupdrug WHERE FdxReferenceFollowUp = #{visit_data[0]}")
 
   drugs.each do |dispensed_drug|
@@ -366,6 +366,11 @@ def create_give_drugs_encounters(patient_data, visit_data)
     drugs.each do |drug|
 
       drug_detail = $mysql_conn.query("SELECT * FROM drug_map WHERE FdxReference = #{drug[4]}").fetch_row
+
+      if ![148, 57,58, 211].include? drug[4]
+
+        enc.regimen_category = drug_detail[12]
+      end
 
       case count
         when 1
@@ -673,7 +678,7 @@ end
 
 def pre_art_patient(patient_id, visit_day)
 
-  received_before = $mysql_conn.query("SELECT * FROM tbpatientdrug WHERE FdxReferenceDrug NOT IN (56,148) AND
+  received_before = $mysql_conn.query("SELECT * FROM tbpatientdrug WHERE FdxReferenceDrug NOT IN (56,148, 57, 58, 211) AND
                                         FdxReferencePatient = #{patient_id} AND FddBeginning < '#{visit_day}'")
 
   if received_before.num_rows > 0
@@ -681,7 +686,7 @@ def pre_art_patient(patient_id, visit_day)
   else
     receiving = $mysql_conn.query("SELECT * FROM tbfollowup AS e INNER JOIN tbfollowupdrug AS f ON
                                     e.FdxReference = f.FdxReferenceFollowUp WHERE e.FddVisit < '#{visit_day}'
-                                    AND e.FdxReferencePatient = #{patient_id} AND f.FdxReferenceDrug NOT IN (56, 148)")
+                                    AND e.FdxReferencePatient = #{patient_id} AND f.FdxReferenceDrug NOT IN (56, 148, 57,58, 211)")
     if receiving.num_rows > 0
       return false
     else
