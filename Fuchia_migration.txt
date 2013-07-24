@@ -1,0 +1,49 @@
+The migration 2-0 tool has a script that enables migration of data from fuchia data model into
+intermediate tables for importation into OpenMRS 1.7 data model.
+
+ To carry out migration of data from fuchia data model, make sure you have the fuchia database
+ which is originally and access database converted to mysql and loaded on your mysql server. Afterwards follow the
+ following steps:
+
+ 1. Set database details in config/database.yml. Name of database should be bart1_intermediate_bare_bones. This is
+ the destination database (Intermediate tables)
+
+ 2. Load drug mapping for fuchia and openmrs into your source (fuchia) database. This mapping is in the db folder under the  name
+   fuchia_bar_drug_map.csv. You load the drug mapping like this: mysql - u root -p fuchia_database_name < fuchia_bar_drug_map.csv.
+
+ 3. Create and set up your destination database with the following command: rake db:create db:migrate
+
+ 4. You are now set to migrate data into the intermediate tables. You can achieve by running the following command:
+    script/runner script/fuchia_migrator.rb fuchia_database_host mysql_username mysql_password fuchia_database_name
+    eg: script/runner script/fuchia_migrator.rb localhost root password fuchiamw
+
+The command in step 4 migrates your data from the fuchia database into Intermediate tables for migration. From the
+intermediate tables into openMRS 1.7, use the migration_imports tool. You can follow the following steps:
+
+1. Enter the command below to import data from intermediary storage into OpenMRS1.7
+  b) ruby procedure_setup.rb openmrs1.7_database username password  site_code
+  For example: ruby procedure_setup.rb bart2_database root admin mpc
+
+2. After successfully importing all the data, then switch to bart2 application and make sure it is up-to-date.
+
+3. Change the bart2 config/database.yaml to point to the OpenMRS 1.7 you specified on step 7 above.
+
+4. Under bart2 terminal load the following into OpenMRS 1.7 dataset (the one which will has the imported data). Remember to replace the username with the actual username of your MySQL, the password with also the actual password of your MySQL and finally openmrs_1.7_database_name with the actual database name you specified on step 7 above.
+
+  a) mysql -uusername -ppassword openmrs_1.7_database_name < db/adherence_calculation.sql
+
+  b) mysql -u username -p password openmrs_1.7_database_name < db/recalculate_adherence.sql
+
+5. On the same bart2 terminal run the following scripts
+  a) script/runner script/recalculate_adherence.rb
+     This script recalculates the patients' adherence.
+  b) script/runner script/fix_program_locations.rb
+     This script fix patients' program locations.
+
+6. Test the database by running bart2 application. Make sure your bart2 application is pointing to the migrated database.  Edit config/database.yml file.
+
+
+
+
+
+
