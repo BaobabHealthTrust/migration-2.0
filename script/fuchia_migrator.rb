@@ -6,9 +6,9 @@ $outcome_id = 1
 
 def start
   count = 1
-  patients =  $mysql_conn.query("SELECT * FROM tbpatient")
+  patients =  $mysql_conn.query("SELECT * FROM tbpatient LIMIT 200")
   patients.each do |row|
-    puts "Working with patient #{count}"
+    puts "Working with patient number #{count}, patient ID: #{row[0]} "
     create_patient(row)
 
     followups = $mysql_conn.query("SELECT * FROM tbfollowup WHERE FdxReferencePatient = #{row[0]} AND FdxReferenceProgram
@@ -46,13 +46,12 @@ def create_patient(patient_array)
   patient = PatientRecord.new()
   patient.patient_id = patient_array[0]
   patient.given_name = patient_array[9].split(" ")[0]
-  patient.middle_name = nil
   patient.family_name = patient_array[9].split(" ")[1] rescue nil
   patient.gender = patient_array[10] == "0" ? "Male" : "Female"
   patient.dob = get_dob(patient_array)
   patient.dob_estimated = patient_array[12].nil? ? false : true
-  patient.current_address = $mysql_conn.query("SELECT FdsLookup FROM tbreference WHERE FdxReference = #{patient_array[3]}").fetch_row[0]
-  patient.occupation= $mysql_conn.query("SELECT FdsLookup FROM tbreference WHERE FdxReference = #{patient_array[5]}").fetch_row[0]
+  patient.current_address = $mysql_conn.query("SELECT FdsLookup FROM tbreference WHERE FdxReference = #{patient_array[3]}").fetch_row[0] rescue "Unknown"
+  patient.occupation= $mysql_conn.query("SELECT FdsLookup FROM tbreference WHERE FdxReference = #{patient_array[5]}").fetch_row[0] rescue "Unknown"
   patient.dead = patient_array[22] == "-1" ? true : false
   patient.art_number= patient_array[8]
 =begin
@@ -85,19 +84,19 @@ def create_vitals_enc(follow_up_enc)
   vitals.patient_id = follow_up_enc[3]
   vitals.encounter_datetime = follow_up_enc[9]
   vitals.date_created = follow_up_enc[1]
-  vitals.weight = follow_up_enc[21].round(2) rescue nil
-  vitals.height = follow_up_enc[22].round(2) rescue nil
+  vitals.weight = follow_up_enc[21]
+  vitals.height = follow_up_enc[22]
   vitals.creator = 1
 
   if vitals.height.blank?
      current_height = $mysql_conn.query("SELECT FdnHeight FROM tbfollowup WHERE FdxReferencePatient= #{follow_up_enc[3]}
-        AND DATE(FddVisit) <= DATE('#{follow_up_enc[9].to_s}') ORDER BY FddVisit DESC LIMIT 1 ").fetch_row
+        AND DATE(FddVisit) <= DATE('#{vitals.encounter_datetime}') AND FdnHeight IS NOT NULL ORDER BY FddVisit DESC LIMIT 1 ").fetch_row[0].to_f rescue nil
+      vitals.height = current_height
   else
     current_height = vitals.height
   end
 
-  vitals.bmi = (vitals.weight/(current_height*current_height)*10000).round(2) rescue nil
-
+  vitals.bmi = (vitals.weight/(current_height*current_height)*10000) rescue nil
   vitals.save
   $enc_id +=1
 end
@@ -448,9 +447,9 @@ end
 
 def get_dob_esitmated(age,  date_estimated)
 
-  year = date_estimated.to_date.year.to_i - age.to_i
+  year = date_estimated.to_date.year.to_i - age.to_i rescue nil
 
-  return "01/01/"+year.to_s
+  return "01/01/"+year.to_s rescue nil
 
 end
 
@@ -467,7 +466,8 @@ def check_if_ever_received_art(patient_id)
 end
 
 def self.repeated_obs(enc,ob)
-  case $mysql_conn.query("SELECT FdsLookup FROM tbreference WHERE FdxReference = #{ob}").fetch_row.to_s.upcase
+  sign = $mysql_conn.query("SELECT FdsLookup FROM tbreference WHERE FdxReference = #{ob}").fetch_row.to_s.upcase
+  case sign
     when 'PANCREATIC AMYLASE (>2-5 x ULN) AND ABDOMINAL PAIN'
       enc.abdominal_pains = "Yes"
     when 'ANOREXIA'
@@ -506,9 +506,8 @@ def self.repeated_obs(enc,ob)
   end
 end
 def self.repeated_obs_staging(enc, ob)
-
-  case $mysql_conn.query("SELECT FdsLookup FROM tbreference WHERE FdxReference = #{ob}").fetch_row.to_s.upcase
-
+  sign = $mysql_conn.query("SELECT FdsLookup FROM tbreference WHERE FdxReference = #{ob}").fetch_row.to_s.upcase
+  case sign
     when 'PANCREATIC AMYLASE (>2-5 x ULN) AND ABDOMINAL PAIN'
       enc.abdominal_pains = "Yes"
     when 'ANOREXIA'
@@ -701,13 +700,13 @@ end
 
 def check_if_patient_has_tb(patientid, visit_date, tb_research)
 
-  check = $mysql_conn.query("SELECT * FROM tbfollowuptb WHERE FdxReferencePatient = #{patientid} AND DATE('#{visit_date}')
+  check = $mysql_conn.query("SELECT * FROM tbfollowuptb WHERE FdxReferencePatient = #{patientid.to_i} AND DATE('#{visit_date}')
                             BETWEEN DATE('FddTreatmentFrom') AND DATE('FddTreatmentTo')")
 
   if  check.num_rows > 0
       return "Confirmed TB on treatment"
   else
-     if tb_research == 99
+     if tb_research == '99'
         return "Unknown"
      else
         return "TB suspected"
@@ -758,9 +757,9 @@ def create_patient_outcome(patientid, state, outcome_date)
 end
 
 def reason_for_starting_arv(patient, encounter, lymph_count)
-
+  lymph_count = lymph_count.to_i rescue nil
   reason_for_eligibility = "Unknown"
-  patient_age = encounter.encounter_datetime.to_date.year.to_i - get_dob(patient).to_date.year.to_i
+  patient_age = encounter.encounter_datetime.to_date.year.to_i - get_dob(patient).to_date.year.to_i rescue 0
   patient_adult = patient_age > 14 ? "ADULT" : "PEDS"
   age_in_months = patient_age * 12
 

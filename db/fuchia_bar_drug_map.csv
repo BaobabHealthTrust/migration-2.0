@@ -24,7 +24,7 @@ INSERT INTO `drug_map` VALUES
 (43,	170,	'EFV600',	'Efavirenz 600',	'EFV600:A1:EFV600',	'Efavirenz 200',	633,	30,	28,	'EFV (Efavirenz 100mg tablet)', 1, '0.0-0.0-0.0-1.0', '4A'),
 (45,	230,	'LPV/r',	'Kaletra (Lopinavir/Ritonavir)',	'LPV/r:A1:LPV/r',	'Lopinavir 200 Ritonavir 50',	794,	73,	74,	'LPV/r (Lopinavir and Ritonavir 100/25mg tablet)', 4,'2.0-0.0-0.0-2.0', '1P'),
 (48,	160,	'NVP',	'Nevirapine',	'NVP:A1:NVP',	'Nevirapine 200',	631,	22,	817,	'NVP (Nevirapimysqwne syrup 1mL/dose in 25mL bottle)', 2, '1.0-0.0-0.0-1.0', '7A'),
-(56,	490,	'COTRI',	'Cotrimoxazole prophylaxis',	'COTRI:P1:COTRI',	'Cotrimoxazole 480',	916,	297,	99,	'CPT (Cotrimoxazole 240mg/5ml suspension)', 1, '0.0-0.0-0.0-1.0','1A'),
+(56,	490,	'COTRI',	'Cotrimoxazole prophylaxis',	'COTRI:P1:COTRI',	'Cotrimoxazole 480',	916,	297,	99,	'CPT (Cotrimoxazole 240mg/5ml suspension)', 1, '0.0-0.0-0.0-1.0',NULL),
 (57,	500,	'FLUCO1',	'Fluconazole primary prophylaxis',	'FLUCO1:P1:FLUCO1',	'Fluconazole 200',	747,	26,	328,	'Fluconazole (2mg/ml injection)', 1, '0.0-0.0-0.0-1.0', NULL),
 (58,	510,	'FLUCO2',	'Fluconazole secondary prophylaxis',	'FLUCO2:P1:FLUCO2',	'Fluconazole 400',	747,	565,	317,	'Fluconazole (10mg/ml suspension)', 1, '0.0-0.0-0.0-1.0', NULL),
 (183,	30,	'FDC3',	'FDC3 (AZT-3TC-NVP)',	'FDC3:A3:AZT-3TC-NVP',	'Zidovudine 300 Lamivudine 150 Nevirapine 200',	1610,	731,	732,	'AZT/3TC/NVP (60/30/50mg tablet)', 2, '1.0-0.0-0.0-1.0', '5A'),
