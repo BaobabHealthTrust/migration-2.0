@@ -6,7 +6,7 @@ $outcome_id = 1
 
 def start
   count = 1
-  patients =  $mysql_conn.query("SELECT * FROM tbpatient LIMIT 200")
+  patients =  $mysql_conn.query("SELECT * FROM tbpatient")
   patients.each do |row|
     puts "Working with patient number #{count}, patient ID: #{row[0]} "
     create_patient(row)
