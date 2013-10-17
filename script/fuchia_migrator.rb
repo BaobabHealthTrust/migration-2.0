@@ -6,7 +6,7 @@ $outcome_id = 1
 
 def start
   count = 1
-  patients =  $mysql_conn.query("SELECT * FROM tbpatient")
+  patients =  $mysql_conn.query("SELECT * FROM tbpatient LIMIT 200 ")
   patients.each do |row|
     puts "Working with patient number #{count}, patient ID: #{row[0]} "
     create_patient(row)
@@ -415,7 +415,7 @@ def create_give_drugs_encounters(patient_data, visit_data)
           enc.dispensed_dosage5 = drug[10]
 
       end
-
+			count +=1
 
     end
 
@@ -647,7 +647,7 @@ end
 def self.drug_induced_symptom(enc, intolerance)
 
   unless intolerance.blank?
-    drug_cozed_symp =  $mysql_conn.query("SELECT FdsLookup FROM tbreference WHERE FdxReference = #{intolerance} LIMIT 1").fetch_row
+    drug_cozed_symp =  $mysql_conn.query("SELECT FdsLookup FROM tbreference WHERE FdxReference = #{intolerance.to_i} LIMIT 1").fetch_row
 
     if ((drug_cozed_symp == "Mild Lipodystrophy") || (drug_cozed_symp == 'Severe Lipodystrophy'))
       enc.drug_induced_lipodystrophy = 'Yes'
